@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int          @id @default(autoincrement())
+  name         String       @unique
+  discordId    String       @unique @db.VarChar(18)
+  avatar       String       @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  role         Role         @relation(fields: [roleId], references: [id])
+  roleId       Int          @default(1)
+  refreshToken String?      @default("")
+  blueprints   Blueprints[]
+  scripts      Scripts[]
+  themes       Themes[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
+}
+
+model Blueprints {
+  id               Int                @id @default(autoincrement())
+  name             String
+  slug             String             @unique
+  visibility       ProjectVisibility  @default(PUBLIC)
+  status           ProjectStatus?     @default(DRAFT)
+  icon             String?            @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  banner           String?            @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  description      String?            @default("Please add a description")
+  category         String?            @default("Other")
+  tags             String[]           @default([])
+  fileUrl          String?            @default("")
+  ownerId          Int
+  owner            User               @relation(fields: [ownerId], references: [id])
+  blueprintsImages BlueprintsImages[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+}
+
+model Scripts {
+  id           Int               @id @default(autoincrement())
+  name         String
+  slug         String            @unique
+  visibility   ProjectVisibility @default(PUBLIC)
+  status       ProjectStatus?    @default(DRAFT)
+  icon         String?           @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  banner       String?           @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  description  String?           @default("Please add a description")
+  code         String?           @default("Please add a code")
+  ownerId      Int
+  owner        User              @relation(fields: [ownerId], references: [id])
+  scriptImages ScriptImages[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deletedAt    DateTime?
+}
+
+model Themes {
+  id          Int               @id @default(autoincrement())
+  name        String
+  slug        String            @unique
+  visibility  ProjectVisibility @default(PUBLIC)
+  status      ProjectStatus?    @default(DRAFT)
+  description String?
+  icon        String?           @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  banner      String?           @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  theme       String?
+  ownerId     Int
+  owner       User              @relation(fields: [ownerId], references: [id])
+  ThemeImages ThemeImages[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+}
+
+model BlueprintsImages {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?    @default("")
+  url         String
+  blueprintId Int
+  blueprint   Blueprints @relation(fields: [blueprintId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+}
+
+model ScriptImages {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?   @default("")
+  url         String
+  scriptId    Int
+  script      Scripts   @relation(fields: [scriptId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+}
+
+model ThemeImages {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?   @default("")
+  url         String
+  themeId     Int
+  theme       Themes    @relation(fields: [themeId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  name        String
+  permissions String[]  @default([])
+  users       User[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+}
+
+enum ProjectVisibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+enum ProjectStatus {
+  DRAFT
+  MODERATION
+  PUBLISHED
+}
