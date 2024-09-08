@@ -1,22 +1,22 @@
-import { Field, Int, ObjectType } from '@nestjs/graphql'
+import { ApiProperty } from '@nestjs/swagger'
+import { Role as PrismaRole } from '@prisma/client'
 
-@ObjectType()
-export class Role {
-	@Field(() => Int, { description: 'Role id' })
+export class Role implements PrismaRole {
+	@ApiProperty({ description: 'Role id' })
 	id: number
 
-	@Field({ description: 'Role name' })
+	@ApiProperty({ description: 'Role name' })
 	name: string
 
-	@Field(() => [String], { description: 'Role permissions' })
+	@ApiProperty({ description: 'Role permissions' })
 	permissions: string[]
 
-	@Field({ description: 'Role created at' })
+	@ApiProperty({ description: 'Role created at' })
 	createdAt: Date
 
-	@Field({ description: 'Role updated at' })
+	@ApiProperty({ description: 'Role updated at' })
 	updatedAt: Date
 
-	@Field({ description: 'Role deleted at' })
+	@ApiProperty({ description: 'Role deleted at' })
 	deletedAt: Date
 }

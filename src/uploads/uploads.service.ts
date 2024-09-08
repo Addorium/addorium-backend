@@ -1,6 +1,6 @@
 import { BlueprintsService } from '@core/blueprints/blueprints.service'
 import { GstorageService } from '@core/gstorage/gstorage.service'
-import { User } from '@core/user/entities/user.entity'
+import { User } from '@core/user/entity/user.entity'
 import { UserService } from '@core/user/user.service'
 import { Injectable } from '@nestjs/common'
 import * as sharp from 'sharp'
@@ -68,7 +68,7 @@ export class UploadsService {
 			case 'user':
 				return await this.userService.updateUaerAvatar(
 					user.id,
-					object_id.toString()
+					filename.toString()
 				)
 			default:
 				return
@@ -85,21 +85,35 @@ export class UploadsService {
 		const webpBuffer = await this.convertToWebP(file.buffer)
 		const { filename, url } = this.getFullFileName(location, type, project_id)
 		const uploadet_file = await this.gstorage.uploadFile(url, webpBuffer)
-		const project = await this.updateProjectImage(
+		const data = await this.updateProjectImage(
 			user,
 			+project_id,
 			location,
 			type,
 			filename
 		)
-		return { filename, url: uploadet_file, project }
+		return { filename, url: uploadet_file, data }
 	}
 
-	async uploadScript(user: User, file: Express.Multer.File) {
-		return null
+	public static imagesFilter(req, file, callback) {
+		if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
+			return callback(new Error('Only image files are allowed!'), false)
+		}
+		callback(null, true)
+	}
+	public static blueprintsFilter(req, file, callback) {
+		if (!file.mimetype.match(/\/(bp)$/)) {
+			return callback(new Error('Only blueprints files are allowed!'), false)
+		}
+		callback(null, true)
 	}
 
-	async uploadBlueprint(user: User, file: Express.Multer.File) {
-		return null
+	public static imagesInterceptorOptions = {
+		fileFilter: UploadsService.imagesFilter,
+		limits: { fileSize: 1024 * 1024 * 10, files: 1 }
+	}
+	public static blueprintsInterceptorOptions = {
+		fileFilter: UploadsService.blueprintsFilter,
+		limits: { fileSize: 1024 * 1024 * 10, files: 1 }
 	}
 }

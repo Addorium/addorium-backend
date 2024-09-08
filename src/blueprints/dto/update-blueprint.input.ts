@@ -1,51 +1,75 @@
-import { Field, InputType, Int, PartialType } from '@nestjs/graphql'
+import { ApiProperty, PartialType } from '@nestjs/swagger'
 import { ProjectStatus } from '@prisma/client'
+import { IsInt, IsNotEmpty, IsString } from 'class-validator'
 import { CreateBlueprintInput } from './create-blueprint.input'
 
-@InputType()
 export class UpdateBlueprintInput extends PartialType(CreateBlueprintInput) {
-	@Field(() => Int)
+	@ApiProperty({ description: 'Id of the blueprint project' })
+	@IsInt({ message: 'Id must be an integer' })
+	@IsNotEmpty({ message: 'Id is required' })
+	@ApiProperty({ description: 'Id of the project', example: 1 })
 	id: number
 
-	@Field(() => String, {
-		description: 'Name of the blueprint project',
-		nullable: true
+	@ApiProperty({ description: 'Descriprion of the project' })
+	@IsString()
+	@ApiProperty({
+		description: 'Descriprion of the project',
+		example: 'This is my project',
+		required: false
 	})
 	descriprion?: string
 
-	@Field(() => ProjectStatus, {
-		description: 'status of the project',
-		nullable: true
+	@ApiProperty({ description: 'Status of the project' })
+	@IsString()
+	@ApiProperty({
+		description: 'Status of the project',
+		example: 'draft',
+		required: false
 	})
 	status?: ProjectStatus
 
-	@Field(() => String, {
+	@ApiProperty({ description: 'Icon of the project' })
+	@IsString()
+	@ApiProperty({
 		description: 'Icon of the project',
-		nullable: true
+		example: 'icon',
+		required: false
 	})
 	icon?: string
 
-	@Field(() => String, {
+	@ApiProperty({ description: 'Banner of the project' })
+	@IsString()
+	@ApiProperty({
 		description: 'Banner of the project',
-		nullable: true
+		example: 'banner',
+		required: false
 	})
 	banner?: string
 
-	@Field(() => String, {
+	@ApiProperty({ description: 'Category of the project' })
+	@IsString()
+	@ApiProperty({
 		description: 'Category of the project',
-		nullable: true
+		example: 'category',
+		required: false
 	})
 	category?: string
 
-	@Field(() => [String], {
+	@ApiProperty({ description: 'Tags of the project' })
+	@IsString({ each: true })
+	@ApiProperty({
 		description: 'Tags of the project',
-		nullable: true
+		example: ['tag1', 'tag2'],
+		required: false
 	})
 	tags?: string[]
 
-	@Field(() => String, {
+	@ApiProperty({ description: 'File of the project' })
+	@IsString()
+	@ApiProperty({
 		description: 'File of the project',
-		nullable: true
+		example: 'file',
+		required: false
 	})
 	file?: string
 }

@@ -1,7 +1,8 @@
+import { SessionsService } from '@core/sessions/sessions.service'
+import { User } from '@core/user/entity/user.entity'
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
-import { User } from '@prisma/client'
 import axios from 'axios'
 import { Response } from 'express'
 import { UserService } from '../user/user.service'
@@ -19,11 +20,12 @@ export class AuthService {
 	constructor(
 		private jwt: JwtService,
 		private userService: UserService,
-		private configService: ConfigService
+		private configService: ConfigService,
+		private sessionsService: SessionsService
 	) {}
 	FRONTEND_URL = this.configService.get('FRONTEND_URL')
-	// REDIRECT_URI = this.FRONTEND_URL + '/auth'
-	REDIRECT_URI = 'http://localhost:4200/api/auth/discord'
+	REDIRECT_URI = this.FRONTEND_URL + '/auth/discord/callback'
+	//REDIRECT_URI = 'http://localhost:4200/api/v1/auth/discord'
 
 	public token = 'none'
 
@@ -55,6 +57,7 @@ export class AuthService {
 		try {
 			token = await axios(options)
 		} catch (error) {
+			console.log(error)
 			throw new UnauthorizedException('Invalid code')
 		}
 		const [accessToken, tokenType] = [
@@ -70,7 +73,7 @@ export class AuthService {
 		]
 		return { discordUsername, discordUserId }
 	}
-	async auth(response: Response, code: string) {
+	async auth(response: Response, code: string, userAgent: string) {
 		const discordUser = await this.discordLogin(code)
 
 		let user: User = await this.validateUser(discordUser.discordUserId)
@@ -78,7 +81,11 @@ export class AuthService {
 			user = await this.register(discordUser)
 		}
 		const tokens = this.issueTokens(user.id)
-		this.storeRefreshTokenToDatabase(user.id, tokens.refreshToken)
+		this.storeRefreshTokenToDatabase(user.id, {
+			refreshToken: tokens.refreshToken,
+			userAgent: userAgent,
+			ip: ''
+		})
 		this.addRefreshTokenToResponse(response, tokens.refreshToken)
 		return {
 			user,
@@ -92,14 +99,18 @@ export class AuthService {
 			avatar: discordUser.discordAvatar
 		})
 	}
-	private storeRefreshTokenToDatabase(userId: number, refreshToken: string) {
-		this.userService.storeRefreshToken(refreshToken, userId)
+	private storeRefreshTokenToDatabase(
+		userId: number,
+		input: { refreshToken: string; userAgent: string; ip: string }
+	) {
+		const session = this.sessionsService.putUserSession(userId, input)
+		return session
 	}
 	private issueTokens(userId: number) {
 		const data = { id: userId }
 
 		const accessToken = this.jwt.sign(data, {
-			expiresIn: '1h'
+			expiresIn: '1m'
 		})
 
 		const refreshToken = this.jwt.sign(data, {
@@ -110,12 +121,33 @@ export class AuthService {
 	}
 	async getNewTokens(refreshToken: string) {
 		const result = await this.jwt.verifyAsync(refreshToken)
-		if (!result) throw new UnauthorizedException('Invalid refresh token')
+		if (!result) {
+			const badSession =
+				await this.sessionsService.getSessionByRefreshToken(refreshToken)
+			if (badSession) {
+				await this.sessionsService.revokeUserSession(
+					badSession.userId,
+					badSession.id
+				)
+			}
+			throw new UnauthorizedException('Invalid refresh token')
+		}
+		let session =
+			await this.sessionsService.getSessionByRefreshToken(refreshToken)
+		if (!session) {
+			throw new UnauthorizedException('Invalid refresh token')
+		}
+		if (session.revokedAt) {
+			throw new UnauthorizedException('Refresh token has been revoked')
+		}
 
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const user = await this.userService.getById(result.id)
-		this.storeRefreshTokenToDatabase(user.id, refreshToken)
+
 		const tokens = this.issueTokens(user.id)
+		session = await this.sessionsService.updateRefreshToken(
+			session.id,
+			tokens.refreshToken
+		)
 
 		return {
 			user,

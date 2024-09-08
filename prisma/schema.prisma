@@ -14,19 +14,32 @@ datasource db {
 }
 
 model User {
-  id           Int          @id @default(autoincrement())
-  name         String       @unique
-  discordId    String       @unique @db.VarChar(18)
-  avatar       String       @default("https://cdn.discordapp.com/embed/avatars/0.png")
-  role         Role         @relation(fields: [roleId], references: [id])
-  roleId       Int          @default(1)
-  refreshToken String?      @default("")
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  discordId    String        @unique @db.VarChar(18)
+  avatar       String        @default("default.webp")
+  role         Role          @relation(fields: [roleId], references: [id])
+  roleId       Int           @default(1)
+  refreshToken String?       @default("")
   blueprints   Blueprints[]
   scripts      Scripts[]
   themes       Themes[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
+  UserSession  UserSession[]
+}
+
+model UserSession {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  user         User      @relation(fields: [userId], references: [id])
+  refreshToken String    @unique
+  userAgent    String
+  ip           String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+  revokedAt    DateTime?
 }
 
 model Blueprints {
@@ -35,8 +48,8 @@ model Blueprints {
   slug             String             @unique
   visibility       ProjectVisibility  @default(PUBLIC)
   status           ProjectStatus?     @default(DRAFT)
-  icon             String?            @default("https://cdn.discordapp.com/embed/avatars/0.png")
-  banner           String?            @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  icon             String?            @default("default.webp")
+  banner           String?            @default("default.webp")
   description      String?            @default("Please add a description")
   category         String?            @default("Other")
   tags             String[]           @default([])
@@ -55,8 +68,8 @@ model Scripts {
   slug         String            @unique
   visibility   ProjectVisibility @default(PUBLIC)
   status       ProjectStatus?    @default(DRAFT)
-  icon         String?           @default("https://cdn.discordapp.com/embed/avatars/0.png")
-  banner       String?           @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  icon         String?           @default("default.webp")
+  banner       String?           @default("default.webp")
   description  String?           @default("Please add a description")
   code         String?           @default("Please add a code")
   ownerId      Int
@@ -74,8 +87,8 @@ model Themes {
   visibility  ProjectVisibility @default(PUBLIC)
   status      ProjectStatus?    @default(DRAFT)
   description String?
-  icon        String?           @default("https://cdn.discordapp.com/embed/avatars/0.png")
-  banner      String?           @default("https://cdn.discordapp.com/embed/avatars/0.png")
+  icon        String?           @default("default.webp")
+  banner      String?           @default("default.webp")
   theme       String?
   ownerId     Int
   owner       User              @relation(fields: [ownerId], references: [id])

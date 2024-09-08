@@ -1,8 +1,10 @@
-import { Field, InputType, Int, PartialType } from '@nestjs/graphql'
+import { ApiProperty, PartialType } from '@nestjs/swagger'
+import { IsInt, IsNotEmpty } from 'class-validator'
 import { CreateUserInput } from './create-user.input'
 
-@InputType()
 export class UpdateUserInput extends PartialType(CreateUserInput) {
-	@Field(() => Int)
+	@IsNotEmpty({ message: 'User id is required' })
+	@IsInt({ message: 'User id must be an integer' })
+	@ApiProperty({ description: 'User id', example: 3 })
 	id: number
 }

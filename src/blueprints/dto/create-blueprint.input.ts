@@ -1,14 +1,24 @@
-import { Field, InputType } from '@nestjs/graphql'
+import { ApiProperty } from '@nestjs/swagger'
 import { ProjectVisibility } from '@prisma/client'
+import { IsNotEmpty, IsString } from 'class-validator'
 
-@InputType()
 export class CreateBlueprintInput {
-	@Field(() => String, { description: 'Name of the blueprint project' })
+	@IsString()
+	@IsNotEmpty({ message: 'Blueprint name is required' })
+	@ApiProperty({ description: 'Blueprint name', example: 'My blueprint' })
 	name: string
 
-	@Field(() => String, { description: 'Slug link for project' })
+	@IsString()
+	@IsNotEmpty({ message: 'Blueprint slug is required' })
+	@ApiProperty({ description: 'Blueprint slug', example: 'my-blueprint' })
 	slug: string
 
-	@Field(() => ProjectVisibility, { description: 'Visibility of the project' })
+	@IsString()
+	@IsNotEmpty({ message: 'Blueprint description is required' })
+	@ApiProperty({
+		description: 'Blueprint description',
+		example: 'PUBLIC',
+		type: String
+	})
 	visibility: ProjectVisibility
 }

@@ -1,10 +1,15 @@
-import { Field, InputType } from '@nestjs/graphql'
+import { ApiProperty } from '@nestjs/swagger'
+import { IsNotEmpty } from 'class-validator'
 
-@InputType()
 export class CreateRoleInput {
-	@Field({ description: 'Role name' })
+	@IsNotEmpty({ message: 'Role name is required' })
+	@ApiProperty({ description: 'Role name', example: 'user' })
 	name: string
 
-	@Field(() => [String], { description: 'Role permissions' })
+	@IsNotEmpty({ each: true, message: 'Role permissions are required' })
+	@ApiProperty({
+		description: 'Role permissions',
+		example: ['users:user.update', 'users:user.create']
+	})
 	permissions: string[]
 }

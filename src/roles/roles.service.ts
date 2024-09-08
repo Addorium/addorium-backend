@@ -1,18 +1,28 @@
+import { PaginatedResult, PaginateFunction, paginator } from '@core/paginator'
 import { PrismaService } from '@core/prisma.service'
 import { Injectable } from '@nestjs/common'
 import { CreateRoleInput } from './dto/create-role.input'
 import { UpdateRoleInput } from './dto/update-role.input'
+import { Role } from './entities/role.entity'
 
 @Injectable()
 export class RolesService {
 	constructor(private prisma: PrismaService) {}
 
+	paginate: PaginateFunction = paginator({ perPage: 10 })
+
 	async create(createRoleInput: CreateRoleInput) {
 		return await this.prisma.role.create({ data: createRoleInput })
 	}
 
-	async findAll() {
-		return await this.prisma.role.findMany()
+	async findAll(page: number): Promise<PaginatedResult<Role>> {
+		return this.paginate(
+			this.prisma.role,
+			{},
+			{
+				page
+			}
+		)
 	}
 
 	async findOne(id: number) {
