@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { CreateRoleInput } from './dto/create-role.input'
+import { RoleFilterInput } from './dto/role-filter.input'
 import { UpdateRoleInput } from './dto/update-role.input'
 import { Role } from './entities/role.entity'
 import { RolesService } from './roles.service'
@@ -32,8 +33,10 @@ export class RolesController {
 	}
 
 	@Get()
-	async findAll(@Query('page') page: number): Promise<PaginatedResult<Role>> {
-		return await this.rolesService.findAll(page)
+	async findAll(
+		@Query() roleFilters: RoleFilterInput
+	): Promise<PaginatedResult<Role>> {
+		return await this.rolesService.findAll(roleFilters)
 	}
 
 	@Get(':id')

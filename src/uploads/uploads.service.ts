@@ -78,16 +78,16 @@ export class UploadsService {
 	async uploadImage(
 		user: User,
 		file: Express.Multer.File,
-		project_id: string,
+		object_id: string,
 		type: Type,
 		location: Location
 	) {
 		const webpBuffer = await this.convertToWebP(file.buffer)
-		const { filename, url } = this.getFullFileName(location, type, project_id)
+		const { filename, url } = this.getFullFileName(location, type, object_id)
 		const uploadet_file = await this.gstorage.uploadFile(url, webpBuffer)
 		const data = await this.updateProjectImage(
 			user,
-			+project_id,
+			+object_id,
 			location,
 			type,
 			filename

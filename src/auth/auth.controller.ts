@@ -2,7 +2,6 @@ import { SessionsService } from '@core/sessions/sessions.service'
 import {
 	Body,
 	Controller,
-	Get,
 	HttpCode,
 	Post,
 	Req,
@@ -34,7 +33,7 @@ export class AuthController {
 		return await this.authService.auth(response, dto.code, userAgent)
 	}
 	@HttpCode(200)
-	@Get('access-token')
+	@Post('access-token')
 	@ApiCookieAuth()
 	async getNewTokens(
 		@Req() req: Request,

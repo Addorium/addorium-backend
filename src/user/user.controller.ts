@@ -53,22 +53,27 @@ export class UserController {
 		return users
 	}
 
-	// find user by id
-	@Get(':id')
+	// find me
+	@Get('/me')
 	@UseGuards(JwtAuthGuard)
 	@ApiBearerAuth()
 	@ApiOkResponse({ type: ClearUser })
-	async findOne(@Param('id') id: number): Promise<ClearUser> {
-		const user = await this.userService.getById(+id)
+	async findMe(@CurrentUser('id') userId: number): Promise<ClearUser> {
+		const user = await this.userService.getById(userId.toString())
 		delete user.refreshToken
 		return user
 	}
 
-	@Get('me')
-	@UseGuards(JwtAuthGuard)
+	// find user by id
+	@Get(':id')
+	// @UseGuards(JwtAuthGuard)
 	@ApiBearerAuth()
 	@ApiOkResponse({ type: ClearUser })
-	async findMe(@CurrentUser() user: User): Promise<ClearUser> {
+	async findOne(
+		// @CurrentUser('id') userId: number,
+		@Param('id') id: number
+	): Promise<ClearUser> {
+		const user = await this.userService.getById(id.toString())
 		delete user.refreshToken
 		return user
 	}

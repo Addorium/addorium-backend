@@ -1,10 +1,13 @@
 import { SessionsService } from '@core/sessions/sessions.service'
+import { UploadsService } from '@core/uploads/uploads.service'
 import { User } from '@core/user/entity/user.entity'
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import axios from 'axios'
 import { Response } from 'express'
+import { Readable } from 'stream'
+import { v4 as uuidv4 } from 'uuid'
 import { UserService } from '../user/user.service'
 
 const API_ENDPOINT = 'https://discord.com/api/v10'
@@ -21,10 +24,11 @@ export class AuthService {
 		private jwt: JwtService,
 		private userService: UserService,
 		private configService: ConfigService,
-		private sessionsService: SessionsService
+		private sessionsService: SessionsService,
+		private uploadsService: UploadsService
 	) {}
 	FRONTEND_URL = this.configService.get('FRONTEND_URL')
-	REDIRECT_URI = this.FRONTEND_URL + '/auth/discord/callback'
+	REDIRECT_URI = this.FRONTEND_URL + '/auth/discord'
 	//REDIRECT_URI = 'http://localhost:4200/api/v1/auth/discord'
 
 	public token = 'none'
@@ -57,7 +61,6 @@ export class AuthService {
 		try {
 			token = await axios(options)
 		} catch (error) {
-			console.log(error)
 			throw new UnauthorizedException('Invalid code')
 		}
 		const [accessToken, tokenType] = [
@@ -93,11 +96,21 @@ export class AuthService {
 		}
 	}
 	async register(discordUser: any): Promise<User> {
-		return await this.userService.create({
-			name: discordUser.discordUsername,
+		const user = await this.userService.create({
 			discordId: discordUser.discordUserId,
-			avatar: discordUser.discordAvatar
+			name: discordUser.discordUsername
 		})
+		const avatar = await this.downloadImageAsMulterFile(
+			'https://api.dicebear.com/9.x/identicon/webp?seed=' + user.name
+		)
+		await this.uploadsService.uploadImage(
+			user,
+			avatar,
+			user.id.toString(),
+			'avatar',
+			'user'
+		)
+		return user
 	}
 	private storeRefreshTokenToDatabase(
 		userId: number,
@@ -141,7 +154,7 @@ export class AuthService {
 			throw new UnauthorizedException('Refresh token has been revoked')
 		}
 
-		const user = await this.userService.getById(result.id)
+		const user = await this.userService.getById(result.id.toString())
 
 		const tokens = this.issueTokens(user.id)
 		session = await this.sessionsService.updateRefreshToken(
@@ -176,5 +189,26 @@ export class AuthService {
 			// lax if production
 			sameSite: 'none'
 		})
+	}
+	private async downloadImageAsMulterFile(
+		url: string
+	): Promise<Express.Multer.File> {
+		const response = await axios.get(url, { responseType: 'arraybuffer' })
+		const buffer = Buffer.from(response.data, 'binary')
+
+		const file: Express.Multer.File = {
+			fieldname: 'file',
+			originalname: `${uuidv4()}.webp`, // или другой формат, в зависимости от типа изображения
+			encoding: '7bit',
+			mimetype: response.headers['content-type'],
+			size: buffer.length,
+			stream: Readable.from(buffer),
+			destination: '',
+			filename: '',
+			path: '',
+			buffer: buffer
+		}
+
+		return file
 	}
 }

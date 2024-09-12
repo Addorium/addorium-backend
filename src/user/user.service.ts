@@ -29,13 +29,12 @@ export class UserService {
 	): Promise<PaginatedResult<ClearUser>> {
 		const { page, ...rest } = userFilters
 		const { orderBy, orderDirection, ...sfilter } = rest
-		const { search, roleId, ...filter } = sfilter
+		const { search, ...filter } = sfilter
 
 		const response = await this.paginate<ClearUser, any>(
 			this.prisma.user,
 			{
 				where: {
-					roleId: +roleId,
 					...filter,
 					...(search
 						? {
@@ -54,9 +53,9 @@ export class UserService {
 		)
 		return response
 	}
-	async getById(id: number): Promise<User> {
+	async getById(id: string): Promise<User> {
 		const user = await this.prisma.user.findUnique({
-			where: { id: id },
+			where: { id: +id },
 			include: { role: true }
 		})
 		if (!user) {
@@ -75,7 +74,7 @@ export class UserService {
 		return user
 	}
 	async storeRefreshToken(refreshToken: string, userId: number) {
-		const user = await this.getById(userId)
+		const user = await this.getById(userId.toString())
 		if (!user) {
 			throw new NotFoundException('[r] User not found')
 		}
@@ -85,7 +84,7 @@ export class UserService {
 		})
 	}
 	async update(updateUserDto: UpdateUserInput): Promise<User> {
-		const user = await this.getById(updateUserDto.id)
+		const user = await this.getById(updateUserDto.id.toString())
 		if (!user) {
 			throw new NotFoundException('[u] User not found')
 		}
@@ -97,7 +96,7 @@ export class UserService {
 	}
 
 	async updateUaerAvatar(id: number, avatar: string): Promise<User> {
-		const user = await this.getById(id)
+		const user = await this.getById(id.toString())
 		if (!user) {
 			throw new NotFoundException('[ua] User not found')
 		}
@@ -109,7 +108,7 @@ export class UserService {
 	}
 
 	async remove(id: number): Promise<User> {
-		const user = await this.getById(id)
+		const user = await this.getById(id.toString())
 		if (!user) {
 			throw new NotFoundException('[r] User not found')
 		}

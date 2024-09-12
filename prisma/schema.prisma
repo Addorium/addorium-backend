@@ -17,7 +17,7 @@ model User {
   id           Int           @id @default(autoincrement())
   name         String        @unique
   discordId    String        @unique @db.VarChar(18)
-  avatar       String        @default("default.webp")
+  avatar       String?       @default("default.webp")
   role         Role          @relation(fields: [roleId], references: [id])
   roleId       Int           @default(1)
   refreshToken String?       @default("")
