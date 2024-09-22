@@ -1,18 +1,18 @@
 import { SessionsService } from '@core/sessions/sessions.service'
 import {
-	Body,
 	Controller,
+	Get,
 	HttpCode,
 	Post,
 	Req,
 	Res,
-	UnauthorizedException
+	UnauthorizedException,
+	UseGuards
 } from '@nestjs/common'
-import { ApiCookieAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger'
+import { AuthGuard } from '@nestjs/passport'
+import { ApiCookieAuth, ApiTags } from '@nestjs/swagger'
 import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
-import { UserAgent } from './decorators/userAgent.decorator'
-import { AuthDto } from './dto/auth.dto'
 
 @Controller('auth')
 @ApiTags('auth')
@@ -22,16 +22,33 @@ export class AuthController {
 		private sessionService: SessionsService
 	) {}
 
-	@Post('/discord?')
+	@Get('/discord')
 	@HttpCode(200)
-	@ApiOkResponse({ description: 'Auth code' })
-	async create(
-		@Res({ passthrough: true }) response: Response,
-		@UserAgent() userAgent: string,
-		@Body() dto: AuthDto
-	) {
-		return await this.authService.auth(response, dto.code, userAgent)
+	@UseGuards(AuthGuard('discord'))
+	async discordLogin() {}
+
+	@Get('/discord/callback')
+	@UseGuards(AuthGuard('discord'))
+	async discordCallback(@Req() req: Request, @Res() res: Response) {
+		const forwarded = req.headers['x-forwarded-for'] as string
+		const clientIp = forwarded
+			? forwarded.split(',')[0].trim()
+			: req.socket.remoteAddress
+
+		await this.authService.auth(
+			res,
+			((req as any).user as any)?.id,
+			req.headers['user-agent'],
+			clientIp
+		)
+		return res.redirect(this.authService.FRONTEND_URL)
 	}
+
+	@Post('login')
+	async login() {
+		return { message: 'Login success', success: true }
+	}
+
 	@HttpCode(200)
 	@Post('access-token')
 	@ApiCookieAuth()

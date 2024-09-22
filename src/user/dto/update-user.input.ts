@@ -7,4 +7,22 @@ export class UpdateUserInput extends PartialType(CreateUserInput) {
 	@IsInt({ message: 'User id must be an integer' })
 	@ApiProperty({ description: 'User id', example: 3 })
 	id: number
+
+	@ApiProperty({
+		description: 'User email',
+		example: ''
+	})
+	email: string
+
+	@ApiProperty({
+		description: 'User password',
+		example: ''
+	})
+	password: string
+
+	@ApiProperty({
+		description: 'User role id',
+		example: 1
+	})
+	roleId: number
 }

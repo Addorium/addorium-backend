@@ -18,7 +18,4 @@ export class CreateUserInput {
 	})
 	@IsString()
 	avatar: string
-
-	@ApiProperty({ description: 'User refresh token', example: '1234567890' })
-	refreshToken: string
 }

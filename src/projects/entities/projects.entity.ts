@@ -1,11 +1,7 @@
 import { SimpleUser } from '@core/user/entity/simple_user.entity'
-import {
-	Blueprints as PrismaBlueprints,
-	ProjectStatus,
-	ProjectVisibility
-} from '@prisma/client'
+import { ProjectStatus, ProjectVisibility } from '@prisma/client'
 
-export class Blueprint implements PrismaBlueprints {
+export class Project {
 	id: number
 	name: string
 	slug: string
@@ -16,10 +12,10 @@ export class Blueprint implements PrismaBlueprints {
 	description: string
 	category: string
 	tags: string[]
-	fileUrl: string
+	fileUrl?: string
 	ownerId: number
+	owner?: SimpleUser
 	createdAt: Date
 	updatedAt: Date
-	deletedAt: Date | null
-	owner: SimpleUser
+	deletedAt: Date
 }

@@ -14,20 +14,21 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique
-  discordId    String        @unique @db.VarChar(18)
-  avatar       String?       @default("default.webp")
-  role         Role          @relation(fields: [roleId], references: [id])
-  roleId       Int           @default(1)
-  refreshToken String?       @default("")
-  blueprints   Blueprints[]
-  scripts      Scripts[]
-  themes       Themes[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  deletedAt    DateTime?
-  UserSession  UserSession[]
+  id            Int           @id @default(autoincrement())
+  name          String        @unique
+  discordId     String        @unique @db.VarChar(18)
+  email         String?       @unique
+  emailVerified DateTime?
+  password      String?
+  avatar        String?       @default("default.webp")
+  role          Role          @relation(fields: [roleId], references: [id])
+  roleId        Int           @default(1)
+  refreshToken  String?       @default("")
+  projects      Projects[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+  UserSession   UserSession[]
 }
 
 model UserSession {
@@ -42,93 +43,34 @@ model UserSession {
   revokedAt    DateTime?
 }
 
-model Blueprints {
-  id               Int                @id @default(autoincrement())
-  name             String
-  slug             String             @unique
-  visibility       ProjectVisibility  @default(PUBLIC)
-  status           ProjectStatus?     @default(DRAFT)
-  icon             String?            @default("default.webp")
-  banner           String?            @default("default.webp")
-  description      String?            @default("Please add a description")
-  category         String?            @default("Other")
-  tags             String[]           @default([])
-  fileUrl          String?            @default("")
-  ownerId          Int
-  owner            User               @relation(fields: [ownerId], references: [id])
-  blueprintsImages BlueprintsImages[]
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  deletedAt        DateTime?
+model Projects {
+  id            Int               @id @default(autoincrement())
+  name          String
+  slug          String            @unique
+  type          ProjectType       @default(BLUEPRINT)
+  visibility    ProjectVisibility @default(PUBLIC)
+  status        ProjectStatus?    @default(DRAFT)
+  icon          String?           @default("default.webp")
+  banner        String?           @default("default.webp")
+  description   String?           @default("Please add a description")
+  category      String?           @default("Other")
+  tags          String[]          @default([])
+  fileUrl       String?           @default("")
+  ownerId       Int
+  owner         User              @relation(fields: [ownerId], references: [id])
+  galleryImages ProjectsImages[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
 }
 
-model Scripts {
-  id           Int               @id @default(autoincrement())
-  name         String
-  slug         String            @unique
-  visibility   ProjectVisibility @default(PUBLIC)
-  status       ProjectStatus?    @default(DRAFT)
-  icon         String?           @default("default.webp")
-  banner       String?           @default("default.webp")
-  description  String?           @default("Please add a description")
-  code         String?           @default("Please add a code")
-  ownerId      Int
-  owner        User              @relation(fields: [ownerId], references: [id])
-  scriptImages ScriptImages[]
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  deletedAt    DateTime?
-}
-
-model Themes {
-  id          Int               @id @default(autoincrement())
-  name        String
-  slug        String            @unique
-  visibility  ProjectVisibility @default(PUBLIC)
-  status      ProjectStatus?    @default(DRAFT)
-  description String?
-  icon        String?           @default("default.webp")
-  banner      String?           @default("default.webp")
-  theme       String?
-  ownerId     Int
-  owner       User              @relation(fields: [ownerId], references: [id])
-  ThemeImages ThemeImages[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  deletedAt   DateTime?
-}
-
-model BlueprintsImages {
-  id          Int        @id @default(autoincrement())
+model ProjectsImages {
+  id          Int       @id @default(autoincrement())
   title       String
-  description String?    @default("")
+  description String?   @default("")
   url         String
   blueprintId Int
-  blueprint   Blueprints @relation(fields: [blueprintId], references: [id])
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  deletedAt   DateTime?
-}
-
-model ScriptImages {
-  id          Int       @id @default(autoincrement())
-  title       String
-  description String?   @default("")
-  url         String
-  scriptId    Int
-  script      Scripts   @relation(fields: [scriptId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
-}
-
-model ThemeImages {
-  id          Int       @id @default(autoincrement())
-  title       String
-  description String?   @default("")
-  url         String
-  themeId     Int
-  theme       Themes    @relation(fields: [themeId], references: [id])
+  blueprint   Projects  @relation(fields: [blueprintId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -154,4 +96,10 @@ enum ProjectStatus {
   DRAFT
   MODERATION
   PUBLISHED
+}
+
+enum ProjectType {
+  BLUEPRINT
+  SCRIPT
+  THEME
 }

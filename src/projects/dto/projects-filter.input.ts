@@ -1,4 +1,4 @@
-export class BlueprintsFilterInput {
+export class ProjectsFilterInput {
 	page?: number
 	orderBy?: string
 	orderDirection?: 'asc' | 'desc'

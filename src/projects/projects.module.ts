@@ -5,13 +5,13 @@ import { UploadsService } from '@core/uploads/uploads.service'
 import { UserService } from '@core/user/user.service'
 import { Module } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import { BlueprintsController } from './blueprints.controller'
-import { BlueprintsService } from './blueprints.service'
+import { ProjectsController } from './projects.controller'
+import { ProjectsService } from './projects.service'
 
 @Module({
-	controllers: [BlueprintsController],
+	controllers: [ProjectsController],
 	providers: [
-		BlueprintsService,
+		ProjectsService,
 		PrismaService,
 		RolesService,
 		UploadsService,
@@ -19,6 +19,6 @@ import { BlueprintsService } from './blueprints.service'
 		UserService,
 		JwtService
 	],
-	exports: [BlueprintsService]
+	exports: [ProjectsService]
 })
-export class BlueprintsModule {}
+export class ProjectsModule {}

@@ -4,112 +4,76 @@ import { User } from '@core/user/entity/user.entity'
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
-import axios from 'axios'
 import { Response } from 'express'
-import { Readable } from 'stream'
-import { v4 as uuidv4 } from 'uuid'
 import { UserService } from '../user/user.service'
-
-const API_ENDPOINT = 'https://discord.com/api/v10'
-const TOCKEN_URL = 'https://discord.com/api/oauth2/token'
-const CLIENT_ID = '1277307705463275611'
-const CLIENT_SECRET = 'ixQAoHROF4e-ngzxYDrMi9CqGQNXTol6'
 
 @Injectable()
 export class AuthService {
 	EXPIRE_DAY_REFRESH_TOKEN = 1
 	REFRESH_TOKEN_NAME = 'refreshToken'
+	ACCESS_TOKEN_NAME = 'accessToken'
 
 	constructor(
 		private jwt: JwtService,
 		private userService: UserService,
 		private configService: ConfigService,
-		private sessionsService: SessionsService,
-		private uploadsService: UploadsService
+		private sessionsService: SessionsService
 	) {}
 	FRONTEND_URL = this.configService.get('FRONTEND_URL')
 	REDIRECT_URI = this.FRONTEND_URL + '/auth/discord'
 	//REDIRECT_URI = 'http://localhost:4200/api/v1/auth/discord'
 
 	public token = 'none'
-
+	async validateDiscordUser(profile: {
+		id: string
+		username: string
+		global_name: string
+		email: string
+	}) {
+		let user = await this.userService.getByDiscordId(profile.id)
+		if (!user) {
+			user = await this.discordRegister(profile)
+			return user
+		}
+		return user
+	}
 	async validateUser(id: string) {
-		const user = await this.userService.getByDiscordId(id)
+		const user = await this.userService.getById(id)
 		if (!user) {
 			return null
 		}
 		return user
 	}
-	async discordLogin(code: string) {
-		const body = {
-			client_id: CLIENT_ID,
-			client_secret: CLIENT_SECRET,
-			grant_type: 'authorization_code',
-			code: code,
-			redirect_uri: this.REDIRECT_URI
-		}
-		const data = Object.keys(body)
-			.map(key => `${key}=${encodeURIComponent(body[key])}`)
-			.join('&')
-		const options = {
-			method: 'POST',
-			headers: { 'content-type': 'application/x-www-form-urlencoded' },
-			data,
-			url: TOCKEN_URL
-		}
-		let token = null
-		try {
-			token = await axios(options)
-		} catch (error) {
-			throw new UnauthorizedException('Invalid code')
-		}
-		const [accessToken, tokenType] = [
-			token.data['access_token'],
-			token.data['token_type']
-		]
-		const discordUser = await axios.get(API_ENDPOINT + '/users/@me', {
-			headers: { authorization: tokenType + ' ' + accessToken }
-		})
-		const [discordUsername, discordUserId] = [
-			discordUser.data['username'],
-			discordUser.data['id']
-		]
-		return { discordUsername, discordUserId }
-	}
-	async auth(response: Response, code: string, userAgent: string) {
-		const discordUser = await this.discordLogin(code)
-
-		let user: User = await this.validateUser(discordUser.discordUserId)
-		if (!user) {
-			user = await this.register(discordUser)
-		}
+	async auth(response: Response, id: string, userAgent: string, ip: string) {
+		const user: User = await this.validateUser(id)
 		const tokens = this.issueTokens(user.id)
 		this.storeRefreshTokenToDatabase(user.id, {
 			refreshToken: tokens.refreshToken,
 			userAgent: userAgent,
-			ip: ''
+			ip: ip
 		})
 		this.addRefreshTokenToResponse(response, tokens.refreshToken)
+		this.addAccessTokenToResponse(response, tokens.accessToken)
 		return {
 			user,
 			...tokens
 		}
 	}
-	async register(discordUser: any): Promise<User> {
+	async discordRegister(discordUser: {
+		id: string
+		username: string
+		global_name: string
+		email: string
+	}): Promise<User> {
 		const user = await this.userService.create({
-			discordId: discordUser.discordUserId,
-			name: discordUser.discordUsername
+			discordId: discordUser.id,
+			name: discordUser.username,
+			email: discordUser.email
 		})
-		const avatar = await this.downloadImageAsMulterFile(
+		const avatar = await UploadsService.downloadImageAsMulterFile(
 			'https://api.dicebear.com/9.x/identicon/webp?seed=' + user.name
 		)
-		await this.uploadsService.uploadImage(
-			user,
-			avatar,
-			user.id.toString(),
-			'avatar',
-			'user'
-		)
+		await this.userService.uploadAvatarImage(avatar, user)
 		return user
 	}
 	private storeRefreshTokenToDatabase(
@@ -179,6 +143,18 @@ export class AuthService {
 			sameSite: 'none'
 		})
 	}
+	addAccessTokenToResponse(res: Response, accessToken: string) {
+		const expiresIn = new Date()
+		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
+		res.cookie(this.ACCESS_TOKEN_NAME, accessToken, {
+			httpOnly: false,
+			domain: 'localhost',
+			expires: expiresIn,
+			secure: true,
+			// lax if production
+			sameSite: 'none'
+		})
+	}
 
 	removeRefreshTokenFromResponse(res: Response) {
 		res.cookie(this.REFRESH_TOKEN_NAME, '', {
@@ -189,26 +165,5 @@ export class AuthService {
 			// lax if production
 			sameSite: 'none'
 		})
-	}
-	private async downloadImageAsMulterFile(
-		url: string
-	): Promise<Express.Multer.File> {
-		const response = await axios.get(url, { responseType: 'arraybuffer' })
-		const buffer = Buffer.from(response.data, 'binary')
-
-		const file: Express.Multer.File = {
-			fieldname: 'file',
-			originalname: `${uuidv4()}.webp`, // или другой формат, в зависимости от типа изображения
-			encoding: '7bit',
-			mimetype: response.headers['content-type'],
-			size: buffer.length,
-			stream: Readable.from(buffer),
-			destination: '',
-			filename: '',
-			path: '',
-			buffer: buffer
-		}
-
-		return file
 	}
 }

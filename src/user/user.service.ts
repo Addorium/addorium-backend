@@ -1,5 +1,7 @@
+import { GstorageService } from '@core/gstorage/gstorage.service'
 import { PaginatedResult, PaginateFunction, paginator } from '@core/paginator'
 import { PrismaService } from '@core/prisma.service'
+import { UploadsService } from '@core/uploads/uploads.service'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Prisma } from '@prisma/client'
@@ -12,7 +14,8 @@ import { User } from './entity/user.entity'
 export class UserService {
 	constructor(
 		private prisma: PrismaService,
-		private jwtService: JwtService
+		private jwtService: JwtService,
+		private gstorage: GstorageService
 	) {}
 	paginate: PaginateFunction = paginator({ perPage: 20 })
 
@@ -64,6 +67,9 @@ export class UserService {
 		return user
 	}
 	async getByDiscordId(id: string): Promise<User> {
+		if (!id) {
+			throw new NotFoundException('Discord id is required')
+		}
 		const user = await this.prisma.user.findFirst({
 			where: { discordId: id },
 			include: { role: true }
@@ -83,14 +89,14 @@ export class UserService {
 			data: { refreshToken: refreshToken }
 		})
 	}
-	async update(updateUserDto: UpdateUserInput): Promise<User> {
+	async update(updateUserDto: UpdateUserInput): Promise<ClearUser> {
 		const user = await this.getById(updateUserDto.id.toString())
 		if (!user) {
 			throw new NotFoundException('[u] User not found')
 		}
 		return this.prisma.user.update({
 			where: { id: updateUserDto.id },
-			data: updateUserDto,
+			data: { ...updateUserDto, roleId: +updateUserDto.roleId },
 			include: { role: true }
 		})
 	}
@@ -106,11 +112,18 @@ export class UserService {
 			include: { role: true }
 		})
 	}
+	async clearAvatar(user: User): Promise<{ success: boolean }> {
+		const avatar = await UploadsService.downloadImageAsMulterFile(
+			'https://api.dicebear.com/9.x/identicon/webp?seed=' + user.name
+		)
+		this.uploadAvatarImage(avatar, user)
+		return { success: true }
+	}
 
 	async remove(id: number): Promise<User> {
 		const user = await this.getById(id.toString())
 		if (!user) {
-			throw new NotFoundException('[r] User not found')
+			throw new NotFoundException('User not found')
 		}
 		return this.prisma.user.delete({
 			where: { id: id },
@@ -118,25 +131,26 @@ export class UserService {
 		})
 	}
 
-	async exclude(
-		user: Promise<User> | User | User[],
-		keys: (keyof User)[]
-	): Promise<Omit<User, keyof User> | Omit<User, keyof User>[]> {
-		const resolvedUser = await user
-
-		if (Array.isArray(resolvedUser)) {
-			return resolvedUser.map(u => this.excludeSingle(u, keys))
-		} else {
-			return this.excludeSingle(resolvedUser, keys)
+	async uploadAvatarImage(file: Express.Multer.File, user: User) {
+		const prevAvatar = user.avatar
+		if (prevAvatar !== 'default.webp') {
+			const { url: prevUrl } = UploadsService.getFullFileName(
+				'user',
+				'avatar',
+				prevAvatar
+			)
+			try {
+				await this.gstorage.deleteFile(prevUrl)
+			} catch (error) {}
 		}
-	}
-
-	private excludeSingle(
-		user: User,
-		keys: (keyof User)[]
-	): Omit<User, keyof User> {
-		return Object.fromEntries(
-			Object.entries(user).filter(([key]) => !keys.includes(key as keyof User))
-		) as Omit<User, keyof User>
+		const webpBuffer = await UploadsService.convertToWebP(file.buffer)
+		const { filename, url } = UploadsService.getFullFileName('user', 'avatar')
+		const uploadet_file = await this.gstorage.uploadFile(url, webpBuffer)
+		const responce = await this.updateUaerAvatar(user.id, filename)
+		return {
+			filename: filename,
+			url: uploadet_file,
+			user: responce
+		}
 	}
 }

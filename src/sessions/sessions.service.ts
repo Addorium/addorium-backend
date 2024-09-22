@@ -1,19 +1,20 @@
 import { PrismaService } from '@core/prisma.service'
-import { UserService } from '@core/user/user.service'
 import { Injectable } from '@nestjs/common'
 import { Session } from './entities/session.entity'
 
 @Injectable()
 export class SessionsService {
-	constructor(
-		private userSerivce: UserService,
-		private prismaService: PrismaService
-	) {}
+	constructor(private prismaService: PrismaService) {}
 
 	async putUserSession(
 		userId: number,
 		input: { refreshToken: string; userAgent: string; ip: string }
 	) {
+		const reqSession = await this.getSessionByRefreshToken(input.refreshToken)
+		if (reqSession) {
+			await this.deleteRefreshToken(input.refreshToken)
+		}
+
 		const session = await this.prismaService.userSession.create({
 			data: {
 				userId: userId,

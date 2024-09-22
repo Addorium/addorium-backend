@@ -5,6 +5,7 @@ export class ClearUser {
 	id: number
 	name: string
 	discordId: string
+	email: string
 	avatar: string
 	roleId: number
 	role: Role
@@ -17,6 +18,7 @@ export function ClearUserFromUser(user: User): ClearUser {
 	clearUser.id = user.id
 	clearUser.name = user.name
 	clearUser.discordId = user.discordId
+	clearUser.email = user.email
 	clearUser.avatar = user.avatar
 	clearUser.roleId = user.roleId
 	clearUser.role = user.role

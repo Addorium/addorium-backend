@@ -10,7 +10,7 @@ import { Role } from './entities/role.entity'
 export class RolesService {
 	constructor(private prisma: PrismaService) {}
 
-	paginate: PaginateFunction = paginator({ perPage: 10 })
+	paginate: PaginateFunction = paginator({ perPage: 20 })
 
 	async create(createRoleInput: CreateRoleInput) {
 		return await this.prisma.role.create({ data: createRoleInput })

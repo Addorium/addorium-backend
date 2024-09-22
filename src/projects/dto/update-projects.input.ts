@@ -1,9 +1,9 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger'
 import { ProjectStatus } from '@prisma/client'
 import { IsInt, IsNotEmpty, IsString } from 'class-validator'
-import { CreateBlueprintInput } from './create-blueprint.input'
+import { CreateProjectInput } from './create-projects.input'
 
-export class UpdateBlueprintInput extends PartialType(CreateBlueprintInput) {
+export class UpdateProjectInput extends PartialType(CreateProjectInput) {
 	@ApiProperty({ description: 'Id of the blueprint project' })
 	@IsInt({ message: 'Id must be an integer' })
 	@IsNotEmpty({ message: 'Id is required' })

@@ -19,10 +19,10 @@ export class GstorageService {
 
 		await fileUpload.save(file, {
 			metadata: {
-				contentType: 'auto-detect'
+				contentType: 'auto-detect',
+				cacheControl: 'no-cache'
 			}
 		})
-
 		return `https://storage.googleapis.com/${this.bucketName}/${filename}`
 	}
 

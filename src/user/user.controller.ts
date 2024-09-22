@@ -10,9 +10,12 @@ import {
 	Controller,
 	Delete,
 	Get,
+	NotFoundException,
 	Param,
 	Patch,
+	Put,
 	Query,
+	UnauthorizedException,
 	UploadedFile,
 	UseGuards,
 	UseInterceptors
@@ -37,8 +40,7 @@ import { UserService } from './user.service'
 export class UserController {
 	constructor(
 		private readonly userService: UserService,
-		private readonly rolesService: RolesService,
-		private readonly uploadsService: UploadsService
+		private readonly rolesService: RolesService
 	) {}
 
 	// find all users
@@ -92,7 +94,7 @@ export class UserController {
 	}
 
 	// update user by id
-	@Patch()
+	@Put()
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
 	@Permission('users:user.update')
 	@ApiBearerAuth()
@@ -105,13 +107,19 @@ export class UserController {
 			user.role.permissions,
 			'admin:user.update'
 		)
+		const hasRoleChangePermission = await this.rolesService.hasPermission(
+			user.role.permissions,
+			'admin:user.update.role'
+		)
+		if (!hasRoleChangePermission && updateUserInput.roleId !== user.roleId) {
+			throw new UnauthorizedException('Permission denied')
+		}
 		if (hasAdminPermission && updateUserInput.id !== user.id) {
 			return await this.userService.update({ ...updateUserInput })
 		} else if (updateUserInput.id !== user.id) {
-			throw new Error('Permission denied')
+			throw new UnauthorizedException('Permission denied')
 		}
 		const updatedUser = await this.userService.update({ ...updateUserInput })
-		delete updatedUser.refreshToken
 		return updatedUser
 	}
 
@@ -157,28 +165,40 @@ export class UserController {
 		@UploadedFile() file: Express.Multer.File,
 		@Body() updateUaerAvatarDto: UpdateUaerAvatarDto
 	) {
+		if (!file) {
+			throw new NotFoundException('File not found')
+		}
 		const hasAdminPermission = await this.rolesService.hasPermission(
 			user.role.permissions,
 			'admin:user.update'
 		)
+		const userFromRequest = await this.userService.getById(
+			updateUaerAvatarDto.id.toString()
+		)
 		if (hasAdminPermission && +updateUaerAvatarDto.id !== user.id) {
-			return await this.uploadsService.uploadImage(
-				user,
-				file,
-				updateUaerAvatarDto.id.toString(),
-				'avatar',
-				'user'
-			)
+			return await this.userService.uploadAvatarImage(file, userFromRequest)
 		} else if (+updateUaerAvatarDto.id !== user.id) {
 			throw new Error('Permission denied')
 		}
 		delete user.refreshToken
-		return await this.uploadsService.uploadImage(
-			user,
-			file,
-			user.id.toString(),
-			'avatar',
-			'user'
+		return await this.userService.uploadAvatarImage(file, user)
+	}
+	@Delete('avatar/:id')
+	@UseGuards(JwtAuthGuard, PermissionsGuard)
+	@Permission('users:user.update.avatar')
+	@ApiBearerAuth()
+	@ApiOkResponse({ type: ClearUser })
+	async userAvatarClear(@CurrentUser() user: User, @Param('id') id: number) {
+		const hasAdminPermission = await this.rolesService.hasPermission(
+			user.role.permissions,
+			'admin:user.update'
 		)
+		const userFromRequest = await this.userService.getById(id.toString())
+		if (hasAdminPermission && +id !== user.id) {
+			return await this.userService.clearAvatar(userFromRequest)
+		} else if (+id !== user.id) {
+			throw new Error('Permission denied')
+		}
+		return await this.userService.clearAvatar(user)
 	}
 }
