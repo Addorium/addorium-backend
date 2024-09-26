@@ -13,7 +13,12 @@ import { UserModule } from './user/user.module'
 
 @Module({
 	imports: [
-		ConfigModule.forRoot(),
+		ConfigModule.forRoot({
+			isGlobal: true,
+			envFilePath: [
+				process.env.NODE_ENV === 'production' ? '.env' : '.env.development'
+			]
+		}),
 		AuthModule,
 		UserModule,
 		GstorageModule,

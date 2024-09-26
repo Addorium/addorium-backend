@@ -4,7 +4,7 @@ import { Strategy } from 'passport-discord'
 
 import { ConfigService } from '@nestjs/config'
 import { AuthService } from './auth.service'
-const REDIRECT_URI = 'http://localhost:4200/api/v1' + '/auth/discord/callback'
+
 @Injectable()
 export class DiscordStrategy extends PassportStrategy(Strategy, 'discord') {
 	constructor(
@@ -14,7 +14,7 @@ export class DiscordStrategy extends PassportStrategy(Strategy, 'discord') {
 		super({
 			clientID: configService.get('DISCORD_CLIENT_ID'),
 			clientSecret: configService.get('DISCORD_CLIENT_SECRET'),
-			callbackURL: REDIRECT_URI,
+			callbackURL: configService.get('DISCORD_REDIRECT_URI'),
 			scope: ['identify', 'email']
 		})
 	}

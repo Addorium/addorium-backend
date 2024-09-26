@@ -136,7 +136,7 @@ export class AuthService {
 		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
 		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
 			httpOnly: true,
-			domain: 'localhost',
+			domain: this.configService.get('FRONTEND_DOMAIN'),
 			expires: expiresIn,
 			secure: true,
 			// lax if production
@@ -148,7 +148,7 @@ export class AuthService {
 		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
 		res.cookie(this.ACCESS_TOKEN_NAME, accessToken, {
 			httpOnly: false,
-			domain: 'localhost',
+			domain: this.configService.get('FRONTEND_DOMAIN'),
 			expires: expiresIn,
 			secure: true,
 			// lax if production
@@ -159,7 +159,7 @@ export class AuthService {
 	removeRefreshTokenFromResponse(res: Response) {
 		res.cookie(this.REFRESH_TOKEN_NAME, '', {
 			httpOnly: true,
-			domain: 'localhost',
+			domain: this.configService.get('FRONTEND_DOMAIN'),
 			expires: new Date(0),
 			secure: true,
 			// lax if production

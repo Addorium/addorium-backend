@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { VersioningType } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
@@ -9,7 +10,8 @@ async function bootstrap() {
 	app.setGlobalPrefix('api')
 	app.use(cookieParser())
 	app.enableCors({
-		origin: [process.env.FRONTEND_URL],
+		origin: [process.env.FRONTEND_DOMAIN],
+		methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
 		credentials: true,
 		exposedHeaders: 'set-cookie'
 	})
