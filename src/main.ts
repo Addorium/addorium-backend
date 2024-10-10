@@ -9,12 +9,14 @@ async function bootstrap() {
 	const app = await NestFactory.create(AppModule)
 	app.setGlobalPrefix('api')
 	app.use(cookieParser())
-	app.enableCors({
-		origin: [process.env.FRONTEND_DOMAIN],
-		methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+	console.log('enviroment', process.env.NODE_ENV)
+	const corsOptions = {
+		origin: [process.env.FRONTEND_URL, 'http://localhost:3000'],
+		methods: 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
 		credentials: true,
-		exposedHeaders: 'set-cookie'
-	})
+		exposedHeaders: 'set-cookie,Authorization'
+	}
+	app.enableCors(corsOptions)
 	app.enableVersioning({
 		prefix: 'v',
 		defaultVersion: '1',

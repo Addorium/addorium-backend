@@ -10,6 +10,7 @@ import {
 	Controller,
 	Delete,
 	Get,
+	HttpException,
 	Param,
 	Patch,
 	Post,
@@ -21,6 +22,7 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger'
+import { ProjectType } from '@prisma/client'
 import { CreateProjectInput } from './dto/create-projects.input'
 import { ProjectsFilterInput } from './dto/projects-filter.input'
 import { UpdateProjectFileDto } from './dto/update-file.input'
@@ -77,6 +79,10 @@ export class ProjectsController {
 	async findOneBySlug(@Param('slug') slug: string) {
 		return await this.projectsService.findOneBySlug(slug)
 	}
+	@Get('tags/:type')
+	async findAllTags(@Param('type') type: ProjectType) {
+		return await this.projectsService.findAllTags(type)
+	}
 
 	@Get(':id')
 	async findOne(@Param('id') id: number): Promise<Project> {
@@ -89,7 +95,6 @@ export class ProjectsController {
 	@ApiBearerAuth()
 	async updateProject(
 		@CurrentUser() user: User,
-		@Param('id') id: number,
 		@Body() updateBlueprintInput: UpdateProjectInput
 	) {
 		return await this.projectsService.update(user, updateBlueprintInput)
@@ -114,7 +119,6 @@ export class ProjectsController {
 		@UploadedFile() file: Express.Multer.File,
 		@Body() updateUaerAvatarDto: UpdateProjectFileDto
 	) {
-		console.log('project_id', updateUaerAvatarDto.id)
 		const project = await this.projectsService.findOne(+updateUaerAvatarDto.id)
 		return await this.projectsService.uploadProjectImage(
 			file,
@@ -136,30 +140,11 @@ export class ProjectsController {
 		if (hasAdminPermission && !this.projectsService.checkOwner(user, id)) {
 			return await this.projectsService.clearIcon(projectFromRequest, 'icon')
 		} else if (!this.projectsService.checkOwner(user, id)) {
-			throw new Error('Permission denied')
+			throw new HttpException('Permission denied', 403)
 		}
 		return await this.projectsService.clearIcon(projectFromRequest, 'icon')
 	}
-	@Patch('update/banner')
-	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.update.banner')
-	@UseInterceptors(
-		FileInterceptor('file', UploadsService.imagesInterceptorOptions)
-	)
-	@ApiBearerAuth()
-	async projectBannerUpload(
-		@CurrentUser() user: User,
-		@UploadedFile() file: Express.Multer.File,
-		@Body() updateUaerAvatarDto: UpdateProjectFileDto
-	) {
-		const project = await this.projectsService.findOne(+updateUaerAvatarDto.id)
-		return await this.projectsService.uploadProjectImage(
-			file,
-			project,
-			user.id,
-			'banner'
-		)
-	}
+
 	@Patch('update/file/:id')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
 	@Permission('users:project.update.file')

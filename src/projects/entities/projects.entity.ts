@@ -1,5 +1,7 @@
+import { Category } from '@core/categories/entities/category.entity'
+import { Tag } from '@core/tags/entities/tag.entity'
 import { SimpleUser } from '@core/user/entity/simple_user.entity'
-import { ProjectStatus, ProjectVisibility } from '@prisma/client'
+import { ProjectImage, ProjectStatus, ProjectVisibility } from '@prisma/client'
 
 export class Project {
 	id: number
@@ -8,10 +10,12 @@ export class Project {
 	visibility: ProjectVisibility
 	status: ProjectStatus
 	icon: string
-	banner: string
+	bannerId: number
+	banner: ProjectImage
 	description: string
-	category: string
-	tags: string[]
+	categoryId: number
+	category: Category
+	tags: Tag[]
 	fileUrl?: string
 	ownerId: number
 	owner?: SimpleUser

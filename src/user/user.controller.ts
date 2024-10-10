@@ -10,6 +10,7 @@ import {
 	Controller,
 	Delete,
 	Get,
+	HttpException,
 	NotFoundException,
 	Param,
 	Patch,
@@ -178,7 +179,7 @@ export class UserController {
 		if (hasAdminPermission && +updateUaerAvatarDto.id !== user.id) {
 			return await this.userService.uploadAvatarImage(file, userFromRequest)
 		} else if (+updateUaerAvatarDto.id !== user.id) {
-			throw new Error('Permission denied')
+			throw new HttpException('Permission denied', 403)
 		}
 		delete user.refreshToken
 		return await this.userService.uploadAvatarImage(file, user)
@@ -197,7 +198,7 @@ export class UserController {
 		if (hasAdminPermission && +id !== user.id) {
 			return await this.userService.clearAvatar(userFromRequest)
 		} else if (+id !== user.id) {
-			throw new Error('Permission denied')
+			throw new HttpException('Permission denied', 403)
 		}
 		return await this.userService.clearAvatar(user)
 	}

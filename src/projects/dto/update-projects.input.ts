@@ -17,7 +17,7 @@ export class UpdateProjectInput extends PartialType(CreateProjectInput) {
 		example: 'This is my project',
 		required: false
 	})
-	descriprion?: string
+	description?: string
 
 	@ApiProperty({ description: 'Status of the project' })
 	@IsString()
@@ -53,7 +53,7 @@ export class UpdateProjectInput extends PartialType(CreateProjectInput) {
 		example: 'category',
 		required: false
 	})
-	category?: string
+	categoryId?: number
 
 	@ApiProperty({ description: 'Tags of the project' })
 	@IsString({ each: true })
@@ -62,7 +62,7 @@ export class UpdateProjectInput extends PartialType(CreateProjectInput) {
 		example: ['tag1', 'tag2'],
 		required: false
 	})
-	tags?: string[]
+	tags?: number[]
 
 	@ApiProperty({ description: 'File of the project' })
 	@IsString()

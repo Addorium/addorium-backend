@@ -69,6 +69,7 @@ export class AuthController {
 		)
 
 		this.authService.addRefreshTokenToResponse(res, refreshToken)
+		this.authService.addAccessTokenToResponse(res, response.accessToken)
 
 		return response
 	}
@@ -84,7 +85,9 @@ export class AuthController {
 			const session = await this.sessionService.getSessionByRefreshToken(
 				refreshTokenFromCookies
 			)
-			await this.sessionService.revokeUserSession(session.userId, session.id)
+			if (session) {
+				await this.sessionService.revokeUserSession(session.userId, session.id)
+			}
 			return { message: 'Logout success', success: true }
 		} else {
 			return {

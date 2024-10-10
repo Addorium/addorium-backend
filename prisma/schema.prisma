@@ -25,7 +25,7 @@ model User {
   role          Role          @relation(fields: [roleId], references: [id])
   roleId        Int           @default(1)
   refreshToken  String?       @default("")
-  projects      Projects[]
+  projects      Project[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   deletedAt     DateTime?
@@ -44,7 +44,7 @@ model UserSession {
   revokedAt    DateTime?
 }
 
-model Projects {
+model Project {
   id            Int               @id @default(autoincrement())
   name          String
   slug          String            @unique
@@ -52,29 +52,29 @@ model Projects {
   visibility    ProjectVisibility @default(PUBLIC)
   status        ProjectStatus?    @default(DRAFT)
   icon          String?           @default("default.webp")
-  banner        String?           @default("default.webp")
+  bannerId      Int?              @unique
+  banner        ProjectImage?     @relation(fields: [bannerId], references: [id], name: "ProjectBanner")
   description   String?           @default("Please add a description")
-  category      String?           @default("Other")
-  tags          String[]          @default([])
+  category      Category?         @relation(fields: [categoryId], references: [id])
+  categoryId    Int?
+  tags          Tag[]
   fileUrl       String?           @default("")
   ownerId       Int
   owner         User              @relation(fields: [ownerId], references: [id])
-  galleryImages ProjectsImages[]
+  galleryImages ProjectImage[]    @relation(name: "ProjectImages")
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   deletedAt     DateTime?
 }
 
-model ProjectsImages {
-  id          Int       @id @default(autoincrement())
+model ProjectImage {
+  id          Int      @id @default(autoincrement())
   title       String
-  description String?   @default("")
+  description String?  @default("")
   url         String
-  blueprintId Int
-  blueprint   Projects  @relation(fields: [blueprintId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  projectId   Int      @unique
+  blueprint   Project  @relation(fields: [projectId], references: [id], name: "ProjectImages")
+  bannerOf    Project? @relation(name: "ProjectBanner")
 }
 
 model Role {
@@ -84,6 +84,28 @@ model Role {
   users       User[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+}
+
+model Tag {
+  id          Int         @id @default(autoincrement())
+  icon        String?     @default("default.svg")
+  name        String      @unique
+  projects    Project[]
+  projectType ProjectType
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+}
+
+model Category {
+  id          Int         @id @default(autoincrement())
+  icon        String?     @default("default.svg")
+  name        String      @unique
+  projectType ProjectType
+  projects    Project[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
 }
 

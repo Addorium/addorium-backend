@@ -5,6 +5,7 @@ import { Type } from '@core/uploads/dto/upload-image.dto'
 import { UploadsService } from '@core/uploads/uploads.service'
 import { User } from '@core/user/entity/user.entity'
 import { Injectable } from '@nestjs/common'
+import { ProjectType } from '@prisma/client'
 import { CreateProjectInput } from './dto/create-projects.input'
 import { ProjectsFilterInput } from './dto/projects-filter.input'
 import { UpdateProjectInput } from './dto/update-projects.input'
@@ -20,7 +21,7 @@ export class ProjectsService {
 	paginate: PaginateFunction = paginator({ perPage: 20 })
 
 	async create(user: User, createBlueprintInput: CreateProjectInput) {
-		const blueprint = await this.prisma.projects.create({
+		const blueprint = await this.prisma.project.create({
 			data: { ...createBlueprintInput, ownerId: user.id },
 			include: {
 				owner: {
@@ -51,7 +52,7 @@ export class ProjectsService {
 		const { search, ...filter } = sfilter
 
 		const response = await this.paginate<Project, any>(
-			this.prisma.projects,
+			this.prisma.project,
 			{
 				where: {
 					...filter,
@@ -100,7 +101,7 @@ export class ProjectsService {
 		const { search, ...filter } = sfilter
 
 		const response = await this.paginate<Project, any>(
-			this.prisma.projects,
+			this.prisma.project,
 			{
 				where: {
 					ownerId: +userId,
@@ -142,7 +143,7 @@ export class ProjectsService {
 	}
 
 	async findOneBySlug(slug: string) {
-		const blueprint = await this.prisma.projects.findUnique({
+		const blueprint = await this.prisma.project.findUnique({
 			where: { slug: slug },
 			include: {
 				owner: {
@@ -159,16 +160,26 @@ export class ProjectsService {
 							}
 						}
 					}
-				}
+				},
+				category: true,
+				tags: true
 			}
 		})
 		return blueprint
 	}
 
+	async findAllTags(type: ProjectType) {
+		switch (type) {
+		}
+	}
+
 	async findOne(id: number): Promise<Project> {
-		const blueprint = await this.prisma.projects.findUnique({
+		const blueprint = await this.prisma.project.findUnique({
 			where: { id },
 			include: {
+				tags: true,
+				category: true,
+				banner: true,
 				owner: {
 					select: {
 						id: true,
@@ -191,12 +202,41 @@ export class ProjectsService {
 	}
 
 	async update(user: User, updateBlueprintInput: UpdateProjectInput) {
-		const { id: id, ...data } = updateBlueprintInput
-		await this.checkOwner(user, id)
-		const blueprint = await this.prisma.projects.update({
+		const { id, tags, ...data } = updateBlueprintInput
+
+		// Шаг 1: Получаем текущий проект с тегами
+		const currentProject = await this.prisma.project.findUnique({
 			where: { id },
-			data: { ...data },
+			select: {
+				tags: {
+					select: {
+						id: true
+					}
+				}
+			}
+		})
+
+		// Шаг 2: Подготовка списка текущих тегов для отключения
+		const currentTags = currentProject?.tags.map(tag => ({ id: tag.id })) || []
+
+		// Шаг 3: Подготовка объекта данных для обновления
+		const updateData: any = { ...data }
+
+		// Шаг 4: Обновляем теги только если они не null
+		if (tags !== null && tags !== undefined) {
+			updateData.tags = {
+				disconnect: currentTags, // Отключаем старые теги
+				connect: tags.map(tagId => ({ id: tagId })) // Подключаем новые теги по ID
+			}
+		}
+
+		// Шаг 5: Обновляем проект
+		const blueprint = await this.prisma.project.update({
+			where: { id },
+			data: updateData,
 			include: {
+				tags: true,
+				category: true,
 				owner: {
 					select: {
 						id: true,
@@ -214,11 +254,12 @@ export class ProjectsService {
 				}
 			}
 		})
+
 		return blueprint
 	}
 
 	async updateImage(id: number, type: Type, image: string) {
-		const blueprint = await this.prisma.projects.update({
+		const blueprint = await this.prisma.project.update({
 			where: { id },
 			data: { [type]: image },
 			select: {
@@ -253,7 +294,7 @@ export class ProjectsService {
 	}
 
 	async checkOwner(user: User, id: number): Promise<boolean> {
-		const blueprint = await this.prisma.projects.findUnique({ where: { id } })
+		const blueprint = await this.prisma.project.findUnique({ where: { id } })
 		if (blueprint.ownerId !== user.id) {
 			return false
 		}
@@ -262,7 +303,7 @@ export class ProjectsService {
 
 	async remove(user: User, id: number) {
 		await this.checkOwner(user, id)
-		const blueprint = await this.prisma.projects.delete({
+		const blueprint = await this.prisma.project.delete({
 			where: { id },
 			include: {
 				owner: {
@@ -290,7 +331,7 @@ export class ProjectsService {
 		ownerId: number,
 		type: Type
 	) {
-		const prevIcon = type === 'icon' ? project.icon : project.banner
+		const prevIcon = project.icon
 		if (prevIcon !== 'default.webp') {
 			const { url: prevUrl } = UploadsService.getFullFileName(
 				'project',
@@ -304,7 +345,7 @@ export class ProjectsService {
 		const webpBuffer = await UploadsService.convertToWebP(file.buffer)
 		const { filename, url } = UploadsService.getFullFileName('project', type)
 		const uploadet_file = await this.gstorage.uploadFile(url, webpBuffer)
-		const blueprint = await this.prisma.projects.update({
+		const blueprint = await this.prisma.project.update({
 			where: { id: +project.id, ownerId: ownerId },
 			data: { [type]: filename }
 		})

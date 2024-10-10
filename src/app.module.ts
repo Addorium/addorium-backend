@@ -10,14 +10,14 @@ import { RolesModule } from './roles/roles.module'
 import { SessionsModule } from './sessions/sessions.module'
 import { UploadsModule } from './uploads/uploads.module'
 import { UserModule } from './user/user.module'
+import { TagsModule } from './tags/tags.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
-			envFilePath: [
-				process.env.NODE_ENV === 'production' ? '.env' : '.env.development'
-			]
+			envFilePath: '.env'
 		}),
 		AuthModule,
 		UserModule,
@@ -27,7 +27,9 @@ import { UserModule } from './user/user.module'
 		UploadsModule,
 		GstorageModule,
 		SessionsModule,
-		ProjectsModule
+		ProjectsModule,
+		TagsModule,
+		CategoriesModule
 	],
 	controllers: [AppController],
 	providers: [AppService, GstorageService]

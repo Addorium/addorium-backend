@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { HttpException, Injectable } from '@nestjs/common'
 import axios from 'axios'
 import * as sharp from 'sharp'
 import { Readable } from 'stream'
@@ -14,12 +14,13 @@ export class UploadsService {
 	public static getFullFileName(
 		location: Location,
 		type: Type,
+		format: string = 'webp',
 		filename?: string
 	): { filename: string; url: string } {
 		const uuid = uuidv4()
-		const full_filename = filename ? `${filename}` : `${uuid}.webp`
+		const full_filename = filename ? `${filename}` : `${uuid}.${format}`
 		if (!type) {
-			throw new Error('Type is required')
+			throw new HttpException('Type is required', 400)
 		}
 		switch (location) {
 			case 'project':
@@ -32,14 +33,31 @@ export class UploadsService {
 					filename: full_filename,
 					url: `images/users/${type}/${full_filename}`
 				}
+			case 'tag':
+				return {
+					filename: full_filename,
+					url: `images/tags/${type}/${full_filename}`
+				}
+			case 'category':
+				return {
+					filename: full_filename,
+					url: `images/categories/${type}/${full_filename}`
+				}
 			default:
-				throw new Error('Location is required')
+				throw new HttpException('Location is required', 400)
 		}
 	}
 
 	public static imagesFilter(req, file, callback) {
 		if (!file.mimetype.match(/\/(jpg|jpeg|png|webp)$/)) {
 			return callback(new Error('Only image files are allowed!'), false)
+		}
+		callback(null, true)
+	}
+	public static svgFilter(req, file, callback) {
+		console.log(file.mimetype)
+		if (file.mimetype !== 'image/svg+xml') {
+			return callback(new Error('Only svg files are allowed!'), false)
 		}
 		callback(null, true)
 	}
@@ -52,6 +70,10 @@ export class UploadsService {
 
 	public static imagesInterceptorOptions = {
 		fileFilter: UploadsService.imagesFilter,
+		limits: { fileSize: 1024 * 1024 * 10, files: 1 }
+	}
+	public static svgInterceptorOptions = {
+		fileFilter: UploadsService.svgFilter,
 		limits: { fileSize: 1024 * 1024 * 10, files: 1 }
 	}
 	public static blueprintsInterceptorOptions = {
