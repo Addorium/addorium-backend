@@ -80,11 +80,11 @@ export class AuthService {
 		userId: number,
 		input: { refreshToken: string; userAgent: string; ip: string }
 	) {
-		const session = this.sessionsService.putUserSession(userId, input)
+		const session = this.sessionsService.putUserSession(+userId, input)
 		return session
 	}
 	private issueTokens(userId: number) {
-		const data = { id: userId }
+		const data = { id: +userId }
 
 		const accessToken = this.jwt.sign(data, {
 			expiresIn: '1m'

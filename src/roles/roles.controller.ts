@@ -51,7 +51,7 @@ export class RolesController {
 		@Param('id') id: number,
 		@Body() updateRoleInput: UpdateRoleInput
 	): Promise<Role> {
-		return await this.rolesService.update(id, updateRoleInput)
+		return await this.rolesService.update(+id, updateRoleInput)
 	}
 
 	@Delete(':id')

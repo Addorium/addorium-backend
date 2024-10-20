@@ -85,7 +85,7 @@ export class UserService {
 			throw new NotFoundException('[r] User not found')
 		}
 		return await this.prisma.user.update({
-			where: { id: userId },
+			where: { id: +userId },
 			data: { refreshToken: refreshToken }
 		})
 	}
@@ -107,7 +107,7 @@ export class UserService {
 			throw new NotFoundException('[ua] User not found')
 		}
 		return this.prisma.user.update({
-			where: { id: id },
+			where: { id: +id },
 			data: { avatar: avatar },
 			include: { role: true }
 		})
@@ -126,7 +126,7 @@ export class UserService {
 			throw new NotFoundException('User not found')
 		}
 		return this.prisma.user.delete({
-			where: { id: id },
+			where: { id: +id },
 			include: { role: true }
 		})
 	}

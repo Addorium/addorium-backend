@@ -17,7 +17,7 @@ export class SessionsService {
 
 		const session = await this.prismaService.userSession.create({
 			data: {
-				userId: userId,
+				userId: +userId,
 				refreshToken: input.refreshToken,
 				userAgent: input.userAgent,
 				ip: input.ip
@@ -29,7 +29,7 @@ export class SessionsService {
 	async findAllUserSessions(userId: number) {
 		const sessions = await this.prismaService.userSession.findMany({
 			where: {
-				userId: userId
+				userId: +userId
 			},
 			select: {
 				id: true,
@@ -47,8 +47,8 @@ export class SessionsService {
 	async findOneUserSession(userId: number, sessionId: number) {
 		const session = await this.prismaService.userSession.findMany({
 			where: {
-				userId: userId,
-				id: sessionId
+				userId: +userId,
+				id: +sessionId
 			},
 			select: {
 				id: true,
@@ -65,8 +65,8 @@ export class SessionsService {
 	async revokeUserSession(userId: number, sessionId: number) {
 		const session = await this.prismaService.userSession.update({
 			where: {
-				userId: userId,
-				id: sessionId
+				userId: +userId,
+				id: +sessionId
 			},
 			data: {
 				revokedAt: new Date()
@@ -86,7 +86,7 @@ export class SessionsService {
 	async updateRefreshToken(sessionId: number, refreshToken: string) {
 		const session = await this.prismaService.userSession.update({
 			where: {
-				id: sessionId
+				id: +sessionId
 			},
 			data: {
 				refreshToken: refreshToken

@@ -44,13 +44,13 @@ export class GalleryService {
 
 	async deleteImageFromGallery(imageId: number) {
 		const image = await this.prisma.projectImage.findUnique({
-			where: { id: imageId }
+			where: { id: +imageId }
 		})
 		if (!image) {
 			throw new HttpException('Image not found', 404)
 		}
 		const deletedImage = await this.prisma.projectImage.delete({
-			where: { id: imageId }
+			where: { id: +imageId }
 		})
 
 		const { filename, url } = UploadsService.getProjectGalleryImageName(
@@ -63,7 +63,7 @@ export class GalleryService {
 	}
 	async getById(id: number) {
 		return await this.prisma.projectImage.findUnique({
-			where: { id },
+			where: { id: +id },
 			include: {
 				project: {
 					select: { id: true }
@@ -73,7 +73,7 @@ export class GalleryService {
 	}
 	async updateImageInGallery(id: number, updateImageDto: UpdateImageDto) {
 		const image = await this.prisma.projectImage.findUnique({
-			where: { id }
+			where: { id: +id }
 		})
 		if (!image) {
 			throw new HttpException('Image not found', 404)

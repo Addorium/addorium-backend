@@ -199,7 +199,7 @@ export class ProjectsService {
 	}
 	async findOneById(id: number): Promise<Project> {
 		const project = await this.prisma.project.findUnique({
-			where: { id },
+			where: { id: +id },
 			include: this.buildProjectInclude()
 		})
 		return project
@@ -240,7 +240,7 @@ export class ProjectsService {
 
 	async updateImage(id: number, type: Type, image: string): Promise<Project> {
 		const project = await this.prisma.project.update({
-			where: { id },
+			where: { id: +id },
 			data: { [type]: image },
 			include: this.buildProjectInclude()
 		})
@@ -248,9 +248,9 @@ export class ProjectsService {
 	}
 
 	async remove(user: User, id: number): Promise<Project> {
-		await this.checkOwner(user, id)
+		await this.checkOwner(user, +id)
 		const project = await this.prisma.project.delete({
-			where: { id },
+			where: { id: +id },
 			include: this.buildProjectInclude()
 		})
 		return project
@@ -277,7 +277,7 @@ export class ProjectsService {
 		const { filename, url } = UploadsService.getFullFileName('project', type)
 		const uploadedFile = await this.gstorage.uploadFile(url, webpBuffer)
 		const updatedProject = await this.prisma.project.update({
-			where: { id: +project.id, ownerId: ownerId },
+			where: { id: +project.id, ownerId: +ownerId },
 			data: { [type]: filename }
 		})
 		return { filename, url: uploadedFile, project: updatedProject }
@@ -289,15 +289,15 @@ export class ProjectsService {
 	}
 
 	async checkOwner(user: User, id: number): Promise<boolean> {
-		const project = await this.prisma.project.findUnique({ where: { id } })
-		if (!project || project.ownerId !== user.id) {
+		const project = await this.prisma.project.findUnique({ where: { id: +id } })
+		if (!project || +project.ownerId !== +user.id) {
 			return false
 		}
 		return true
 	}
 	async checkUpdatePermissions(user: User, projectId: number) {
-		const project = await this.findOneById(projectId)
-		const isOwner = await this.checkOwner(user, projectId)
+		const project = await this.findOneById(+projectId)
+		const isOwner = await this.checkOwner(user, +projectId)
 		const hasAdminPermission = await this.rolesService.hasPermission(
 			user.role.permissions,
 			'admin:projects.update'
@@ -316,8 +316,8 @@ export class ProjectsService {
 		}
 	}
 	async checkUpdatePermissionsiInternal(user: User, projectId: number) {
-		const project = await this.findOneById(projectId)
-		const isOwner = await this.checkOwner(user, projectId)
+		const project = await this.findOneById(+projectId)
+		const isOwner = await this.checkOwner(user, +projectId)
 		const hasAdminPermission = await this.rolesService.hasPermission(
 			user.role.permissions,
 			'admin:projects.update'

@@ -71,7 +71,7 @@ export class CategoriesService {
 
 	async findOne(id: number, projectType: ProjectType): Promise<Category> {
 		return this.prismaService.category.findFirst({
-			where: { id, projectType }
+			where: { id: +id, projectType }
 		})
 	}
 
@@ -99,12 +99,12 @@ export class CategoriesService {
 
 	async remove(id: number): Promise<Category> {
 		const currentCategory = await this.prismaService.category.findFirst({
-			where: { id }
+			where: { id: +id }
 		})
 		if (currentCategory.icon) {
 			await this.deleteCategoryIcon(currentCategory.icon)
 		}
-		return this.prismaService.category.delete({ where: { id } })
+		return this.prismaService.category.delete({ where: { id: +id } })
 	}
 
 	async uploadCategoryIcon(

@@ -64,7 +64,7 @@ export class TagsService {
 
 	async findOne(id: number, projectType: ProjectType): Promise<Tag> {
 		return this.prismaService.tag.findFirst({
-			where: { id, projectType }
+			where: { id: +id, projectType }
 		})
 	}
 
@@ -73,7 +73,9 @@ export class TagsService {
 		updateTagDto: UpdateTagDto,
 		file: Express.Multer.File
 	): Promise<Tag> {
-		const currentTag = await this.prismaService.tag.findFirst({ where: { id } })
+		const currentTag = await this.prismaService.tag.findFirst({
+			where: { id: +id }
+		})
 		if (file.size !== 0 && currentTag.icon) {
 			await this.deleteTagIcon(currentTag.icon)
 		}
@@ -82,14 +84,14 @@ export class TagsService {
 			updateTagDto.icon = filename
 		}
 		const tag = await this.prismaService.tag.update({
-			where: { id },
+			where: { id: +id },
 			data: { ...updateTagDto }
 		})
 		return tag
 	}
 
 	async remove(id: number): Promise<Tag> {
-		return this.prismaService.tag.delete({ where: { id } })
+		return this.prismaService.tag.delete({ where: { id: +id } })
 	}
 
 	async uploadTagIcon(

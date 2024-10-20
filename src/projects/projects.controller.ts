@@ -87,7 +87,7 @@ export class ProjectsController {
 
 	@Get(':id')
 	async findOne(@Param('id') id: number): Promise<Project> {
-		return await this.projectsService.findOneById(id)
+		return await this.projectsService.findOneById(+id)
 	}
 
 	@Put(':id')
@@ -111,8 +111,8 @@ export class ProjectsController {
 	@Permission('users:project.delete')
 	@ApiBearerAuth()
 	async removeProject(@CurrentUser() user: User, @Param('id') id: number) {
-		await this.projectsService.checkUpdatePermissions(user, id)
-		return await this.projectsService.remove(user, id)
+		await this.projectsService.checkUpdatePermissions(user, +id)
+		return await this.projectsService.remove(user, +id)
 	}
 
 	@Patch('update/icon')

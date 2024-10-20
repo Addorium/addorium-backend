@@ -41,18 +41,18 @@ export class RolesService {
 	}
 
 	async findOne(id: number) {
-		return await this.prisma.role.findUnique({ where: { id } })
+		return await this.prisma.role.findUnique({ where: { id: +id } })
 	}
 
 	async update(id: number, updateRoleInput: UpdateRoleInput) {
 		return await this.prisma.role.update({
 			data: updateRoleInput,
-			where: { id }
+			where: { id: +id }
 		})
 	}
 
 	async remove(id: number) {
-		return await this.prisma.role.delete({ where: { id } })
+		return await this.prisma.role.delete({ where: { id: +id } })
 	}
 
 	async hasPermission(

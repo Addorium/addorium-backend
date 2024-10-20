@@ -131,7 +131,7 @@ export class UserController {
 	@ApiBearerAuth()
 	@ApiOkResponse({ type: ClearUser })
 	async removeUser(@Param('id') id: number): Promise<ClearUser> {
-		const user = await this.userService.remove(id)
+		const user = await this.userService.remove(+id)
 		delete user.refreshToken
 		return user
 	}
@@ -195,9 +195,9 @@ export class UserController {
 			'admin:user.update'
 		)
 		const userFromRequest = await this.userService.getById(id.toString())
-		if (hasAdminPermission && +id !== user.id) {
+		if (hasAdminPermission && +id !== +user.id) {
 			return await this.userService.clearAvatar(userFromRequest)
-		} else if (+id !== user.id) {
+		} else if (+id !== +user.id) {
 			throw new HttpException('Permission denied', 403)
 		}
 		return await this.userService.clearAvatar(user)
