@@ -18,6 +18,8 @@ RUN pnpm build
 # Stage 2: Production
 FROM node:20.11.1-alpine AS production
 
+RUN npm install -g pnpm
+
 WORKDIR /app
 
 # Копирование собранного приложения и установленных зависимостей
