@@ -68,13 +68,16 @@ model Project {
 }
 
 model ProjectImage {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
-  description String?  @default("")
+  description String?   @default("")
   url         String
-  projectId   Int      @unique
-  blueprint   Project  @relation(fields: [projectId], references: [id], name: "ProjectImages")
-  bannerOf    Project? @relation(name: "ProjectBanner")
+  projectId   Int
+  project     Project   @relation(fields: [projectId], references: [id], name: "ProjectImages")
+  bannerOf    Project?  @relation(name: "ProjectBanner")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 }
 
 model Role {

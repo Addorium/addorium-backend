@@ -11,6 +11,22 @@ export class UploadsService {
 	public static async convertToWebP(buffer: Buffer): Promise<Buffer> {
 		return await sharp(buffer).webp().toBuffer()
 	}
+
+	public static getProjectGalleryImageName(
+		projectId: string,
+		filename?: string
+	): { filename: string; url: string } {
+		const uuid = uuidv4()
+		const full_filename = filename ? `${filename}` : `${uuid}.webp`
+		if (!projectId) {
+			throw new HttpException('Type is required', 400)
+		}
+		return {
+			filename: full_filename,
+			url: `images/projects/gallery/${projectId}/${full_filename}`
+		}
+	}
+
 	public static getFullFileName(
 		location: Location,
 		type: Type,
@@ -55,7 +71,6 @@ export class UploadsService {
 		callback(null, true)
 	}
 	public static svgFilter(req, file, callback) {
-		console.log(file.mimetype)
 		if (file.mimetype !== 'image/svg+xml') {
 			return callback(new Error('Only svg files are allowed!'), false)
 		}

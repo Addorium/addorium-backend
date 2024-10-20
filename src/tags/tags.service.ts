@@ -36,7 +36,7 @@ export class TagsService {
 	}
 
 	async findAll(tagsFilter: TagsFilterInput): Promise<PaginatedResult<Tag>> {
-		const { page, ...rest } = tagsFilter
+		const { page, perPage = 200, ...rest } = tagsFilter
 		const { orderBy, orderDirection, ...sfilter } = rest
 		const { search, ...filter } = sfilter
 
@@ -55,7 +55,7 @@ export class TagsService {
 			},
 			{
 				page,
-				perPage: 200
+				perPage: perPage
 			}
 		)
 

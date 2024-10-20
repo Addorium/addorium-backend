@@ -1,6 +1,7 @@
 import { GstorageService } from '@core/gstorage/gstorage.service'
 import { PrismaService } from '@core/prisma.service'
 import { RolesService } from '@core/roles/roles.service'
+import { TagsService } from '@core/tags/tags.service'
 import { UploadsService } from '@core/uploads/uploads.service'
 import { UserService } from '@core/user/user.service'
 import { Module } from '@nestjs/common'
@@ -17,7 +18,8 @@ import { ProjectsService } from './projects.service'
 		UploadsService,
 		GstorageService,
 		UserService,
-		JwtService
+		JwtService,
+		TagsService
 	],
 	exports: [ProjectsService]
 })

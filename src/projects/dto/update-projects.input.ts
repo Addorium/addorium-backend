@@ -1,6 +1,6 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger'
 import { ProjectStatus } from '@prisma/client'
-import { IsInt, IsNotEmpty, IsString } from 'class-validator'
+import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator'
 import { CreateProjectInput } from './create-projects.input'
 
 export class UpdateProjectInput extends PartialType(CreateProjectInput) {
@@ -38,13 +38,13 @@ export class UpdateProjectInput extends PartialType(CreateProjectInput) {
 	icon?: string
 
 	@ApiProperty({ description: 'Banner of the project' })
-	@IsString()
+	@IsNumber()
 	@ApiProperty({
 		description: 'Banner of the project',
 		example: 'banner',
 		required: false
 	})
-	banner?: string
+	bannerId?: number
 
 	@ApiProperty({ description: 'Category of the project' })
 	@IsString()

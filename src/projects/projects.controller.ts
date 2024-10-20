@@ -3,6 +3,7 @@ import { CurrentUser } from '@core/auth/decorators/user.decorator'
 import { JwtAuthGuard } from '@core/auth/guards/auth.guard'
 import { PermissionsGuard } from '@core/auth/guards/permissions.guard'
 import { RolesService } from '@core/roles/roles.service'
+import { TagsService } from '@core/tags/tags.service'
 import { UploadsService } from '@core/uploads/uploads.service'
 import { User } from '@core/user/entity/user.entity'
 import {
@@ -10,7 +11,6 @@ import {
 	Controller,
 	Delete,
 	Get,
-	HttpException,
 	Param,
 	Patch,
 	Post,
@@ -35,7 +35,8 @@ import { ProjectsService } from './projects.service'
 export class ProjectsController {
 	constructor(
 		private readonly projectsService: ProjectsService,
-		private readonly rolesService: RolesService
+		private readonly rolesService: RolesService,
+		private readonly tagsService: TagsService
 	) {}
 
 	@Post()
@@ -81,12 +82,12 @@ export class ProjectsController {
 	}
 	@Get('tags/:type')
 	async findAllTags(@Param('type') type: ProjectType) {
-		return await this.projectsService.findAllTags(type)
+		return await this.tagsService.findAll({ projectType: type, perPage: 100 })
 	}
 
 	@Get(':id')
 	async findOne(@Param('id') id: number): Promise<Project> {
-		return await this.projectsService.findOne(id)
+		return await this.projectsService.findOneById(id)
 	}
 
 	@Put(':id')
@@ -97,7 +98,12 @@ export class ProjectsController {
 		@CurrentUser() user: User,
 		@Body() updateBlueprintInput: UpdateProjectInput
 	) {
-		return await this.projectsService.update(user, updateBlueprintInput)
+		await this.projectsService.checkUpdatePermissions(
+			user,
+			updateBlueprintInput.id
+		)
+
+		return await this.projectsService.update(updateBlueprintInput)
 	}
 
 	@Delete(':id')
@@ -105,6 +111,7 @@ export class ProjectsController {
 	@Permission('users:project.delete')
 	@ApiBearerAuth()
 	async removeProject(@CurrentUser() user: User, @Param('id') id: number) {
+		await this.projectsService.checkUpdatePermissions(user, id)
 		return await this.projectsService.remove(user, id)
 	}
 
@@ -119,7 +126,13 @@ export class ProjectsController {
 		@UploadedFile() file: Express.Multer.File,
 		@Body() updateUaerAvatarDto: UpdateProjectFileDto
 	) {
-		const project = await this.projectsService.findOne(+updateUaerAvatarDto.id)
+		await this.projectsService.checkUpdatePermissions(
+			user,
+			updateUaerAvatarDto.id
+		)
+		const project = await this.projectsService.findOneById(
+			+updateUaerAvatarDto.id
+		)
 		return await this.projectsService.uploadProjectImage(
 			file,
 			project,
@@ -132,17 +145,9 @@ export class ProjectsController {
 	@Permission('users:project.update.icon')
 	@ApiBearerAuth()
 	async projectIconClear(@CurrentUser() user: User, @Param('id') id: number) {
-		const hasAdminPermission = await this.rolesService.hasPermission(
-			user.role.permissions,
-			'admin:project.update'
-		)
-		const projectFromRequest = await this.projectsService.findOne(id)
-		if (hasAdminPermission && !this.projectsService.checkOwner(user, id)) {
-			return await this.projectsService.clearIcon(projectFromRequest, 'icon')
-		} else if (!this.projectsService.checkOwner(user, id)) {
-			throw new HttpException('Permission denied', 403)
-		}
-		return await this.projectsService.clearIcon(projectFromRequest, 'icon')
+		const project = await this.projectsService.findOneById(+id)
+		await this.projectsService.checkUpdatePermissions(user, +id)
+		return await this.projectsService.clearIcon(project, 'icon')
 	}
 
 	@Patch('update/file/:id')
@@ -171,7 +176,8 @@ export class ProjectsController {
 		@UploadedFile() file: Express.Multer.File,
 		@Query('id') project_id: string
 	) {
-		const project = await this.projectsService.findOne(+project_id)
+		const project = await this.projectsService.findOneById(+project_id)
+		await this.projectsService.checkUpdatePermissions(user, +project_id)
 		return await this.projectsService.uploadProjectImage(
 			file,
 			project,

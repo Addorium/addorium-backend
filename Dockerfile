@@ -4,12 +4,12 @@ FROM node:20.11.1-alpine AS builder
 WORKDIR /app
 
 # Установка зависимостей
-COPY package*.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+COPY package*.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Копирование исходного кода и сборка
 COPY . .
-RUN yarn build
+RUN pnpm build
 
 # Stage 2: Production
 FROM node:20.11.1-alpine AS production
@@ -25,7 +25,9 @@ COPY --from=builder /app/service_account.json ./
 # Установка переменных окружения (если нужно)
 # ENV NODE_ENV=production
 
-# Запуск приложения
-CMD ["yarn", "start:prod"]
-
 EXPOSE 4200
+
+# Запуск приложения
+CMD ["pnpm", "start:prod"]
+
+

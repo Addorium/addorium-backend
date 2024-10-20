@@ -1,11 +1,12 @@
 import { GstorageService } from '@core/gstorage/gstorage.service'
 import { PaginatedResult, PaginateFunction, paginator } from '@core/paginator'
 import { PrismaService } from '@core/prisma.service'
+import { RolesService } from '@core/roles/roles.service'
 import { Type } from '@core/uploads/dto/upload-image.dto'
 import { UploadsService } from '@core/uploads/uploads.service'
 import { User } from '@core/user/entity/user.entity'
-import { Injectable } from '@nestjs/common'
-import { ProjectType } from '@prisma/client'
+import { HttpException, Injectable } from '@nestjs/common'
+import { Prisma, ProjectStatus } from '@prisma/client'
 import { CreateProjectInput } from './dto/create-projects.input'
 import { ProjectsFilterInput } from './dto/projects-filter.input'
 import { UpdateProjectInput } from './dto/update-projects.input'
@@ -15,78 +16,133 @@ import { Project } from './entities/projects.entity'
 export class ProjectsService {
 	constructor(
 		private prisma: PrismaService,
-		private gstorage: GstorageService
+		private gstorage: GstorageService,
+		private rolesService: RolesService
 	) {}
 
 	paginate: PaginateFunction = paginator({ perPage: 20 })
 
-	async create(user: User, createBlueprintInput: CreateProjectInput) {
-		const blueprint = await this.prisma.project.create({
-			data: { ...createBlueprintInput, ownerId: user.id },
-			include: {
-				owner: {
-					select: {
-						id: true,
-						name: true,
-						avatar: true,
-						discordId: true,
-						role: {
-							select: {
-								id: true,
-								name: true,
-								permissions: true
-							}
+	private async checkDuplicateProjectNameOrSlug(
+		name: string,
+		slug: string,
+		projectId?: number
+	): Promise<void> {
+		const hasName = await this.prisma.project.count({
+			where: { name, id: { not: projectId } }
+		})
+		const hasSlug = await this.prisma.project.count({
+			where: { slug, id: { not: projectId } }
+		})
+
+		if (hasName > 0) {
+			throw new HttpException('Project name already exists', 400)
+		}
+		if (hasSlug > 0) {
+			throw new HttpException('Project slug already exists', 400)
+		}
+	}
+
+	private buildProjectInclude() {
+		return {
+			owner: {
+				select: {
+					id: true,
+					name: true,
+					avatar: true,
+					discordId: true,
+					email: true,
+					role: {
+						select: {
+							id: true,
+							name: true,
+							permissions: true
 						}
 					}
 				}
+			},
+			category: true,
+			tags: true,
+			galleryImages: {
+				select: {
+					id: true,
+					description: true,
+					title: true,
+					url: true,
+					projectId: true,
+					createdAt: true,
+					updatedAt: true,
+					deletedAt: true
+				}
+			},
+			banner: {
+				select: {
+					id: true,
+					description: true,
+					title: true,
+					url: true,
+					projectId: true,
+					createdAt: true,
+					updatedAt: true,
+					deletedAt: true
+				}
 			}
+		}
+	}
+
+	async create(
+		user: User,
+		createProjectInput: CreateProjectInput
+	): Promise<Project> {
+		await this.checkDuplicateProjectNameOrSlug(
+			createProjectInput.name,
+			createProjectInput.slug
+		)
+
+		const project = await this.prisma.project.create({
+			data: { ...createProjectInput, ownerId: user.id },
+			include: this.buildProjectInclude()
 		})
-		return blueprint
+		return project
 	}
 
 	async findAll(
 		blueprintsFilter: ProjectsFilterInput
 	): Promise<PaginatedResult<Project>> {
-		const { page, ...rest } = blueprintsFilter
-		const { orderBy, orderDirection, ...sfilter } = rest
-		const { search, ...filter } = sfilter
+		const {
+			page,
+			search,
+			orderBy,
+			orderDirection,
+			categories,
+			tags,
+			projectStatus
+		} = blueprintsFilter
 
-		const response = await this.paginate<Project, any>(
+		const response = await this.paginate<Project, Prisma.ProjectFindManyArgs>(
 			this.prisma.project,
 			{
 				where: {
-					...filter,
-					...(search
-						? {
-								OR: [
-									{ name: { contains: search, mode: 'insensitive' } },
-									{ description: { contains: search, mode: 'insensitive' } }
-								]
-							}
+					...(search && {
+						OR: [
+							{ name: { contains: search, mode: 'insensitive' } },
+							{ description: { contains: search, mode: 'insensitive' } }
+						]
+					}),
+					...(projectStatus ? { status: projectStatus as ProjectStatus } : {}),
+					...(tags && tags.length > 0
+						? { tags: { some: { name: { in: tags } } } }
+						: {}),
+					...(categories && categories.length > 0
+						? { category: { name: { in: categories } } }
 						: {})
 				},
-				orderBy: { [orderBy]: orderDirection },
-				include: {
-					owner: {
-						select: {
-							id: true,
-							name: true,
-							avatar: true,
-							discordId: true,
-							role: {
-								select: {
-									id: true,
-									name: true,
-									permissions: true
-								}
-							}
-						}
-					}
-				}
+				orderBy:
+					orderBy === 'category'
+						? { category: { name: orderDirection } }
+						: { [orderBy]: orderDirection },
+				include: this.buildProjectInclude()
 			},
-			{
-				page
-			}
+			{ page }
 		)
 
 		return response
@@ -96,235 +152,110 @@ export class ProjectsService {
 		userId: string,
 		blueprintsFilter: ProjectsFilterInput
 	): Promise<PaginatedResult<Project>> {
-		const { page, ...rest } = blueprintsFilter
-		const { orderBy, orderDirection, ...sfilter } = rest
-		const { search, ...filter } = sfilter
+		const {
+			page,
+			search,
+			orderBy,
+			orderDirection,
+			tags,
+			categories,
+			projectStatus
+		} = blueprintsFilter
 
-		const response = await this.paginate<Project, any>(
+		const response = await this.paginate<Project, Prisma.ProjectFindManyArgs>(
 			this.prisma.project,
 			{
 				where: {
 					ownerId: +userId,
-					...filter,
-					...(search
-						? {
-								OR: [
-									{ name: { contains: search, mode: 'insensitive' } },
-									{ description: { contains: search, mode: 'insensitive' } }
-								]
-							}
+					...(search && {
+						OR: [
+							{ name: { contains: search, mode: 'insensitive' } },
+							{ description: { contains: search, mode: 'insensitive' } }
+						]
+					}),
+					...(projectStatus ? { status: projectStatus as ProjectStatus } : {}),
+					...(tags && tags.length > 0
+						? { tags: { some: { name: { in: tags } } } }
+						: {}),
+					...(categories && categories.length > 0
+						? { category: { name: { in: categories } } }
 						: {})
 				},
 				orderBy: { [orderBy]: orderDirection },
-				include: {
-					owner: {
-						select: {
-							id: true,
-							name: true,
-							avatar: true,
-							discordId: true,
-							role: {
-								select: {
-									id: true,
-									name: true,
-									permissions: true
-								}
-							}
-						}
-					}
-				}
+				include: this.buildProjectInclude()
 			},
-			{
-				page
-			}
+			{ page }
 		)
 
 		return response
 	}
 
-	async findOneBySlug(slug: string) {
-		const blueprint = await this.prisma.project.findUnique({
-			where: { slug: slug },
-			include: {
-				owner: {
-					select: {
-						id: true,
-						name: true,
-						avatar: true,
-						discordId: true,
-						role: {
-							select: {
-								id: true,
-								name: true,
-								permissions: true
-							}
-						}
-					}
-				},
-				category: true,
-				tags: true
-			}
+	async findOneBySlug(slug: string): Promise<Project> {
+		const project = await this.prisma.project.findUnique({
+			where: { slug },
+			include: this.buildProjectInclude()
 		})
-		return blueprint
+		return project
+	}
+	async findOneById(id: number): Promise<Project> {
+		const project = await this.prisma.project.findUnique({
+			where: { id },
+			include: this.buildProjectInclude()
+		})
+		return project
 	}
 
-	async findAllTags(type: ProjectType) {
-		switch (type) {
+	async update(updateProjectInput: UpdateProjectInput): Promise<Project> {
+		const { id, tags, ...data } = updateProjectInput
+		if (data.name || data.slug) {
+			await this.checkDuplicateProjectNameOrSlug(data.name, data.slug, id)
 		}
-	}
 
-	async findOne(id: number): Promise<Project> {
-		const blueprint = await this.prisma.project.findUnique({
+		const currentProject = await this.findOneById(+id)
+
+		if (data.status === 'PUBLISHED' && currentProject.status === 'DRAFT') {
+			data.status = 'MODERATION'
+		}
+
+		const currentTags = await this.prisma.project
+			.findUnique({
+				where: { id },
+				select: { tags: { select: { id: true } } }
+			})
+			.then(project => project?.tags.map(tag => ({ id: tag.id })) || [])
+
+		const updatedProject = await this.prisma.project.update({
 			where: { id },
-			include: {
-				tags: true,
-				category: true,
-				banner: true,
-				owner: {
-					select: {
-						id: true,
-						name: true,
-						avatar: true,
-						email: true,
-						discordId: true,
-						role: {
-							select: {
-								id: true,
-								name: true,
-								permissions: true
-							}
-						}
-					}
-				}
-			}
-		})
-		return blueprint
-	}
-
-	async update(user: User, updateBlueprintInput: UpdateProjectInput) {
-		const { id, tags, ...data } = updateBlueprintInput
-
-		// Шаг 1: Получаем текущий проект с тегами
-		const currentProject = await this.prisma.project.findUnique({
-			where: { id },
-			select: {
+			data: {
+				...data,
 				tags: {
-					select: {
-						id: true
-					}
+					disconnect: currentTags,
+					connect: tags?.map(tagId => ({ id: tagId })) || []
 				}
-			}
+			},
+			include: this.buildProjectInclude()
 		})
-
-		// Шаг 2: Подготовка списка текущих тегов для отключения
-		const currentTags = currentProject?.tags.map(tag => ({ id: tag.id })) || []
-
-		// Шаг 3: Подготовка объекта данных для обновления
-		const updateData: any = { ...data }
-
-		// Шаг 4: Обновляем теги только если они не null
-		if (tags !== null && tags !== undefined) {
-			updateData.tags = {
-				disconnect: currentTags, // Отключаем старые теги
-				connect: tags.map(tagId => ({ id: tagId })) // Подключаем новые теги по ID
-			}
-		}
-
-		// Шаг 5: Обновляем проект
-		const blueprint = await this.prisma.project.update({
-			where: { id },
-			data: updateData,
-			include: {
-				tags: true,
-				category: true,
-				owner: {
-					select: {
-						id: true,
-						name: true,
-						avatar: true,
-						discordId: true,
-						role: {
-							select: {
-								id: true,
-								name: true,
-								permissions: true
-							}
-						}
-					}
-				}
-			}
-		})
-
-		return blueprint
+		return updatedProject
 	}
 
-	async updateImage(id: number, type: Type, image: string) {
-		const blueprint = await this.prisma.project.update({
+	async updateImage(id: number, type: Type, image: string): Promise<Project> {
+		const project = await this.prisma.project.update({
 			where: { id },
 			data: { [type]: image },
-			select: {
-				id: true,
-				name: true,
-				description: true,
-				owner: {
-					select: {
-						id: true,
-						name: true,
-						avatar: true,
-						discordId: true,
-						role: {
-							select: {
-								id: true,
-								name: true,
-								permissions: true
-							}
-						}
-					}
-				},
-				icon: true,
-				banner: true
-			}
+			include: this.buildProjectInclude()
 		})
-		return blueprint
+		return project
 	}
 
-	async clearIcon(project: Project, type: Type) {
-		this.updateImage(project.id, type, 'default.webp')
-		return { success: true }
-	}
-
-	async checkOwner(user: User, id: number): Promise<boolean> {
-		const blueprint = await this.prisma.project.findUnique({ where: { id } })
-		if (blueprint.ownerId !== user.id) {
-			return false
-		}
-		return true
-	}
-
-	async remove(user: User, id: number) {
+	async remove(user: User, id: number): Promise<Project> {
 		await this.checkOwner(user, id)
-		const blueprint = await this.prisma.project.delete({
+		const project = await this.prisma.project.delete({
 			where: { id },
-			include: {
-				owner: {
-					select: {
-						id: true,
-						name: true,
-						avatar: true,
-						discordId: true,
-						role: {
-							select: {
-								id: true,
-								name: true,
-								permissions: true
-							}
-						}
-					}
-				}
-			}
+			include: this.buildProjectInclude()
 		})
-		return blueprint
+		return project
 	}
+
 	async uploadProjectImage(
 		file: Express.Multer.File,
 		project: Project,
@@ -344,15 +275,59 @@ export class ProjectsService {
 		}
 		const webpBuffer = await UploadsService.convertToWebP(file.buffer)
 		const { filename, url } = UploadsService.getFullFileName('project', type)
-		const uploadet_file = await this.gstorage.uploadFile(url, webpBuffer)
-		const blueprint = await this.prisma.project.update({
+		const uploadedFile = await this.gstorage.uploadFile(url, webpBuffer)
+		const updatedProject = await this.prisma.project.update({
 			where: { id: +project.id, ownerId: ownerId },
 			data: { [type]: filename }
 		})
-		return {
-			filename: filename,
-			url: uploadet_file,
-			blueprint: blueprint
+		return { filename, url: uploadedFile, project: updatedProject }
+	}
+
+	async clearIcon(project: Project, type: Type) {
+		this.updateImage(project.id, type, 'default.webp')
+		return { success: true }
+	}
+
+	async checkOwner(user: User, id: number): Promise<boolean> {
+		const project = await this.prisma.project.findUnique({ where: { id } })
+		if (!project || project.ownerId !== user.id) {
+			return false
 		}
+		return true
+	}
+	async checkUpdatePermissions(user: User, projectId: number) {
+		const project = await this.findOneById(projectId)
+		const isOwner = await this.checkOwner(user, projectId)
+		const hasAdminPermission = await this.rolesService.hasPermission(
+			user.role.permissions,
+			'admin:projects.update'
+		)
+		if (project.status === 'MODERATION' && !hasAdminPermission) {
+			throw new HttpException(
+				'Only admins can update a project in moderation status',
+				403
+			)
+		}
+		if (!isOwner && !hasAdminPermission) {
+			throw new HttpException(
+				'You do not have permission to update this project',
+				403
+			)
+		}
+	}
+	async checkUpdatePermissionsiInternal(user: User, projectId: number) {
+		const project = await this.findOneById(projectId)
+		const isOwner = await this.checkOwner(user, projectId)
+		const hasAdminPermission = await this.rolesService.hasPermission(
+			user.role.permissions,
+			'admin:projects.update'
+		)
+		if (project.status === 'MODERATION' && !hasAdminPermission) {
+			return false
+		}
+		if (!isOwner && !hasAdminPermission) {
+			return false
+		}
+		return true
 	}
 }
