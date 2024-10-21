@@ -11,6 +11,7 @@ import {
 	Controller,
 	Delete,
 	Get,
+	HttpException,
 	Param,
 	Patch,
 	Post,
@@ -24,7 +25,10 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger'
 import { ProjectType } from '@prisma/client'
 import { CreateProjectInput } from './dto/create-projects.input'
-import { ProjectsFilterInput } from './dto/projects-filter.input'
+import {
+	ProjectsFilterAllInput,
+	ProjectsFilterInput
+} from './dto/projects-filter.input'
 import { UpdateProjectFileDto } from './dto/update-file.input'
 import { UpdateProjectInput } from './dto/update-projects.input'
 import { Project } from './entities/projects.entity'
@@ -53,6 +57,12 @@ export class ProjectsController {
 	@Get()
 	async findAll(@Query() blueprintsFilter: ProjectsFilterInput) {
 		return await this.projectsService.findAll(blueprintsFilter)
+	}
+	@Get('all')
+	async getAllSimple(@Query() blueprintsAllFilter: ProjectsFilterAllInput) {
+		return await this.projectsService.simpleFindAll({
+			...blueprintsAllFilter
+		})
 	}
 
 	@Get('user/my')
@@ -126,6 +136,9 @@ export class ProjectsController {
 		@UploadedFile() file: Express.Multer.File,
 		@Body() updateUaerAvatarDto: UpdateProjectFileDto
 	) {
+		if (file === undefined) {
+			throw new HttpException('File not found! Please try again.', 400)
+		}
 		await this.projectsService.checkUpdatePermissions(
 			user,
 			updateUaerAvatarDto.id

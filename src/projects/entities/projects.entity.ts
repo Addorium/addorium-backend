@@ -7,6 +7,7 @@ import { ProjectStatus, ProjectVisibility } from '@prisma/client'
 export class Project {
 	id: number
 	name: string
+	summary: string
 	slug: string
 	visibility: ProjectVisibility
 	status: ProjectStatus

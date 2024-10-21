@@ -4,28 +4,37 @@ import { IsEnum, IsNotEmpty, IsString } from 'class-validator'
 
 export class CreateProjectInput {
 	@IsEnum(ProjectType)
-	@IsNotEmpty({ message: 'Blueprint type is required' })
+	@IsNotEmpty({ message: 'Project type is required' })
 	@ApiProperty({
-		description: 'Blueprint type',
+		description: 'Project type',
 		example: 'BLUEPRINT',
 		enum: String
 	})
 	type: ProjectType
 
 	@IsString()
-	@IsNotEmpty({ message: 'Blueprint name is required' })
-	@ApiProperty({ description: 'Blueprint name', example: 'My blueprint' })
+	@IsNotEmpty({ message: 'Project name is required' })
+	@ApiProperty({ description: 'Project name', example: 'My Project' })
 	name: string
 
 	@IsString()
-	@IsNotEmpty({ message: 'Blueprint slug is required' })
-	@ApiProperty({ description: 'Blueprint slug', example: 'my-blueprint' })
+	@IsNotEmpty({ message: 'Project description is required' })
+	@ApiProperty({
+		description: 'Project summary',
+		example: 'My project summary',
+		type: String
+	})
+	summary: string
+
+	@IsString()
+	@IsNotEmpty({ message: 'Project slug is required' })
+	@ApiProperty({ description: 'Project slug', example: 'my-Project' })
 	slug: string
 
 	@IsString()
-	@IsNotEmpty({ message: 'Blueprint description is required' })
+	@IsNotEmpty({ message: 'Project description is required' })
 	@ApiProperty({
-		description: 'Blueprint description',
+		description: 'Project description',
 		example: 'PUBLIC',
 		type: String
 	})

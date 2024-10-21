@@ -25,6 +25,7 @@ model User {
   role          Role          @relation(fields: [roleId], references: [id])
   roleId        Int           @default(1)
   refreshToken  String?       @default("")
+  follows       Project[]     @relation(name: "ProjectFollowers")
   projects      Project[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -37,6 +38,10 @@ model UserSession {
   userId       Int
   user         User      @relation(fields: [userId], references: [id])
   refreshToken String    @unique
+  os           String
+  platform     String
+  city         String
+  country      String
   userAgent    String
   ip           String
   createdAt    DateTime  @default(now())
@@ -47,6 +52,7 @@ model UserSession {
 model Project {
   id            Int               @id @default(autoincrement())
   name          String
+  summary       String
   slug          String            @unique
   type          ProjectType       @default(BLUEPRINT)
   visibility    ProjectVisibility @default(PUBLIC)
@@ -59,7 +65,9 @@ model Project {
   categoryId    Int?
   tags          Tag[]
   fileUrl       String?           @default("")
+  downloads     Int               @default(0)
   ownerId       Int
+  folowers      User[]            @relation(name: "ProjectFollowers")
   owner         User              @relation(fields: [ownerId], references: [id])
   galleryImages ProjectImage[]    @relation(name: "ProjectImages")
   createdAt     DateTime          @default(now())

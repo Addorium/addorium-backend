@@ -8,7 +8,10 @@ import { User } from '@core/user/entity/user.entity'
 import { HttpException, Injectable } from '@nestjs/common'
 import { Prisma, ProjectStatus } from '@prisma/client'
 import { CreateProjectInput } from './dto/create-projects.input'
-import { ProjectsFilterInput } from './dto/projects-filter.input'
+import {
+	ProjectsFilterAllInput,
+	ProjectsFilterInput
+} from './dto/projects-filter.input'
 import { UpdateProjectInput } from './dto/update-projects.input'
 import { Project } from './entities/projects.entity'
 
@@ -115,7 +118,8 @@ export class ProjectsService {
 			orderDirection,
 			categories,
 			tags,
-			projectStatus
+			projectStatus,
+			perPage
 		} = blueprintsFilter
 
 		const response = await this.paginate<Project, Prisma.ProjectFindManyArgs>(
@@ -142,7 +146,39 @@ export class ProjectsService {
 						: { [orderBy]: orderDirection },
 				include: this.buildProjectInclude()
 			},
-			{ page }
+			{ page: page, perPage: perPage || 20 }
+		)
+
+		return response
+	}
+	async simpleFindAll(
+		blueprintsFilter: ProjectsFilterAllInput
+	): Promise<PaginatedResult<Project>> {
+		const { page, search, orderBy, projectType, categories, tags, perPage } =
+			blueprintsFilter
+
+		const response = await this.paginate<Project, Prisma.ProjectFindManyArgs>(
+			this.prisma.project,
+			{
+				where: {
+					...(search && {
+						OR: [
+							{ name: { contains: search, mode: 'insensitive' } },
+							{ description: { contains: search, mode: 'insensitive' } }
+						]
+					}),
+					type: projectType,
+					status: 'PUBLISHED',
+					...(tags && tags.length > 0
+						? { tags: { some: { name: { in: tags } } } }
+						: {}),
+					...(categories && categories.length > 0
+						? { category: { name: { in: categories } } }
+						: {})
+				},
+				include: this.buildProjectInclude()
+			},
+			{ page: page, perPage: perPage || 20 }
 		)
 
 		return response
