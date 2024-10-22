@@ -135,6 +135,10 @@ export class SessionsService {
 				userId: true,
 				userAgent: true,
 				ip: true,
+				os: true,
+				platform: true,
+				city: true,
+				country: true,
 				createdAt: true,
 				revokedAt: true
 			}
