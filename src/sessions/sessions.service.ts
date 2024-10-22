@@ -95,7 +95,10 @@ export class SessionsService {
 		return session
 	}
 
-	async updateRefreshToken(sessionId: number, refreshToken: string) {
+	async updateRefreshToken(
+		sessionId: number,
+		refreshToken: string
+	): Promise<Omit<Session, 'refreshToken'>> {
 		const session = await this.prismaService.userSession.update({
 			where: {
 				id: +sessionId
@@ -108,6 +111,10 @@ export class SessionsService {
 				userId: true,
 				userAgent: true,
 				ip: true,
+				os: true,
+				platform: true,
+				city: true,
+				country: true,
 				createdAt: true,
 				revokedAt: true
 			}
