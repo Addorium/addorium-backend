@@ -38,12 +38,12 @@ model UserSession {
   userId       Int
   user         User      @relation(fields: [userId], references: [id])
   refreshToken String    @unique
-  os           String
-  platform     String
-  city         String
-  country      String
-  userAgent    String
-  ip           String
+  os           String?
+  platform     String?
+  city         String?
+  country      String?
+  userAgent    String?
+  ip           String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now()) @updatedAt
   revokedAt    DateTime?

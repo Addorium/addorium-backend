@@ -8,7 +8,15 @@ export class SessionsService {
 
 	async putUserSession(
 		userId: number,
-		input: { refreshToken: string; userAgent: string; ip: string }
+		input: {
+			refreshToken: string
+			userAgent: string
+			ip: string
+			os?: string
+			platform?: string
+			city?: string
+			country?: string
+		}
 	) {
 		const reqSession = await this.getSessionByRefreshToken(input.refreshToken)
 		if (reqSession) {
@@ -20,7 +28,11 @@ export class SessionsService {
 				userId: +userId,
 				refreshToken: input.refreshToken,
 				userAgent: input.userAgent,
-				ip: input.ip
+				ip: input.ip,
+				os: input.os,
+				platform: input.platform,
+				city: input.city,
+				country: input.country
 			}
 		})
 		return session
