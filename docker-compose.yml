@@ -1,0 +1,12 @@
+backend:
+    image: dalynka/addorium-backend:prod
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`dalynkaa.me`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=myresolver"
+      - "com.centurylinklabs.watchtower.enable=true"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 2
