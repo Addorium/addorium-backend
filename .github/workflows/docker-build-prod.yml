@@ -1,4 +1,4 @@
-name: Docker Build and Push Production
+name: Docker Build, Test, and Push Production
 
 on:
   push:
@@ -6,8 +6,37 @@ on:
       - master
 
 jobs:
-  build:
+  # Job для тестирования
+  test:
     runs-on: ubuntu-latest
+
+    steps:
+      # Шаг 1: Клонирование репозитория
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Шаг 2: Установка Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Шаг 3: Установка pnpm
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # Шаг 4: Установка зависимостей
+      - name: Install dependencies
+        run: pnpm install
+
+      # Шаг 5: Запуск тестов
+      - name: Run Tests
+        run: pnpm test
+
+  # Job для сборки и публикации Docker-образа
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: test # Этот job запустится только после успешного выполнения `test`
 
     steps:
       # Шаг 1: Клонирование репозитория
