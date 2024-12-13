@@ -1,4 +1,6 @@
 import { Permission } from '@core/auth/decorators/roles.decorator'
+import { hasPermission } from '@core/roles/permission.helper'
+
 import { CurrentUser } from '@core/auth/decorators/user.decorator'
 import { JwtAuthGuard } from '@core/auth/guards/auth.guard'
 import { PermissionsGuard } from '@core/auth/guards/permissions.guard'
@@ -104,11 +106,11 @@ export class UserController {
 		@CurrentUser() user: User,
 		@Body() updateUserInput: UpdateUserInput
 	): Promise<ClearUser> {
-		const hasAdminPermission = await this.rolesService.hasPermission(
+		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
 			'admin:user.update'
 		)
-		const hasRoleChangePermission = await this.rolesService.hasPermission(
+		const hasRoleChangePermission = await hasPermission(
 			user.role.permissions,
 			'admin:user.update.role'
 		)
@@ -169,7 +171,7 @@ export class UserController {
 		if (!file) {
 			throw new NotFoundException('File not found')
 		}
-		const hasAdminPermission = await this.rolesService.hasPermission(
+		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
 			'admin:user.update'
 		)
@@ -190,7 +192,7 @@ export class UserController {
 	@ApiBearerAuth()
 	@ApiOkResponse({ type: ClearUser })
 	async userAvatarClear(@CurrentUser() user: User, @Param('id') id: number) {
-		const hasAdminPermission = await this.rolesService.hasPermission(
+		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
 			'admin:user.update'
 		)

@@ -1,3 +1,4 @@
+import { hasPermission } from '@core/roles/permission.helper'
 import { RolesService } from '@core/roles/roles.service'
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
@@ -25,9 +26,13 @@ export class PermissionsGuard implements CanActivate {
 		const userPermissions = role.permissions
 
 		for (const requiredPermission of requiredPermissions) {
-			if (
-				this.rolesService.hasPermission(userPermissions, requiredPermission)
-			) {
+			const result = await
+			 hasPermission(
+				userPermissions,
+				requiredPermission
+			)
+			console.log('result3 - ', result)
+			if (result) {
 				return true
 			}
 		}

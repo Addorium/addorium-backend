@@ -1,40 +1,46 @@
-import { Storage } from '@google-cloud/storage'
-import { Injectable } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { MINIO_CONNECTION } from 'nestjs-minio'
 
 @Injectable()
 export class GstorageService {
-	private storage: Storage
-	private bucketName: string
+	private readonly bucketName: string
 
-	constructor() {
-		this.storage = new Storage({
-			keyFilename: 'service_account.json'
-		})
-		this.bucketName = 'bprint'
+	constructor(
+		@Inject(MINIO_CONNECTION) private readonly minioClient,
+		private readonly configService: ConfigService
+	) {
+		this.bucketName = this.configService.get<string>('MINIO_BUCKET')
 	}
 
 	async uploadFile(filename: string, file: Buffer) {
-		const bucket = this.storage.bucket(this.bucketName)
-		const fileUpload = bucket.file(filename)
-
-		await fileUpload.save(file, {
-			metadata: {
-				contentType: 'auto-detect',
-				cacheControl: 'no-cache'
-			}
-		})
-		return `https://storage.googleapis.com/${this.bucketName}/${filename}`
+		await this.minioClient.putObject(this.bucketName, filename, file)
+		return `http://${this.configService.get<string>('MINIO_ENDPOINT')}:${this.configService.get<string>('MINIO_PORT')}/${this.bucketName}/${filename}`
 	}
 
 	async deleteFile(filename: string) {
-		const bucket = this.storage.bucket(this.bucketName)
-		await bucket.file(filename).delete()
+		await this.minioClient.removeObject(this.bucketName, filename)
 	}
 
 	async getFile(filename: string): Promise<Buffer> {
-		const bucket = this.storage.bucket(this.bucketName)
-		const file = bucket.file(filename)
-		const [content] = await file.download()
-		return content
+		return new Promise((resolve, reject) => {
+			this.minioClient.getObject(
+				this.bucketName,
+				filename,
+				(err, dataStream) => {
+					if (err) {
+						return reject(err)
+					}
+					const chunks: Buffer[] = []
+					dataStream.on('data', chunk => {
+						chunks.push(chunk)
+					})
+					dataStream.on('end', () => {
+						resolve(Buffer.concat(chunks))
+					})
+					dataStream.on('error', reject)
+				}
+			)
+		})
 	}
 }

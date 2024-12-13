@@ -10,6 +10,7 @@ import { UserService } from '../user/user.service'
 @Injectable()
 export class AuthService {
 	EXPIRE_DAY_REFRESH_TOKEN = 1
+	EXPIRE_MINUTE_ACCESS = 1
 	REFRESH_TOKEN_NAME = 'refreshToken'
 	ACCESS_TOKEN_NAME = 'accessToken'
 
@@ -46,14 +47,13 @@ export class AuthService {
 	}
 	async auth(response: Response, id: string, userAgent: string, ip: string) {
 		const user: User = await this.validateUser(id)
-		const tokens = this.issueTokens(user.id)
+		const tokens = this.issueTokens(user)
 		this.storeRefreshTokenToDatabase(user.id, {
 			refreshToken: tokens.refreshToken,
 			userAgent: userAgent,
 			ip: ip
 		})
 		this.addRefreshTokenToResponse(response, tokens.refreshToken)
-		this.addAccessTokenToResponse(response, tokens.accessToken)
 		return {
 			user,
 			...tokens
@@ -83,20 +83,28 @@ export class AuthService {
 		const session = this.sessionsService.putUserSession(+userId, input)
 		return session
 	}
-	private issueTokens(userId: number) {
-		const data = { id: +userId }
+	private issueTokens(user: User) {
+		const accessData = {
+			id: +user.id,
+			email: user.email,
+			name: user.name,
+			role: user.role
+		}
+		const refreshData = {
+			id: +user.id
+		}
 
-		const accessToken = this.jwt.sign(data, {
+		const accessToken = this.jwt.sign(accessData, {
 			expiresIn: '1m'
 		})
 
-		const refreshToken = this.jwt.sign(data, {
+		const refreshToken = this.jwt.sign(refreshData, {
 			expiresIn: '7d'
 		})
 
 		return { accessToken, refreshToken }
 	}
-	async getNewTokens(refreshToken: string) {
+	async getNewTokens(refreshToken: string, res: Response) {
 		const result = await this.jwt.verifyAsync(refreshToken)
 		if (!result) {
 			const badSession =
@@ -107,20 +115,23 @@ export class AuthService {
 					badSession.id
 				)
 			}
+			this.removeRefreshTokenFromResponse(res)
 			throw new UnauthorizedException('Invalid refresh token')
 		}
 		let session =
 			await this.sessionsService.getSessionByRefreshToken(refreshToken)
 		if (!session) {
+			this.removeRefreshTokenFromResponse(res)
 			throw new UnauthorizedException('Invalid refresh token')
 		}
 		if (session.revokedAt) {
+			this.removeRefreshTokenFromResponse(res)
 			throw new UnauthorizedException('Refresh token has been revoked')
 		}
 
 		const user = await this.userService.getById(result.id.toString())
 
-		const tokens = this.issueTokens(user.id)
+		const tokens = this.issueTokens(user)
 		session = await this.sessionsService.updateRefreshToken(
 			session.id,
 			tokens.refreshToken
@@ -136,18 +147,6 @@ export class AuthService {
 		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
 		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
 			httpOnly: true,
-			domain: this.configService.get('FRONTEND_DOMAIN'),
-			expires: expiresIn,
-			secure: true,
-			// lax if production
-			sameSite: 'none'
-		})
-	}
-	addAccessTokenToResponse(res: Response, accessToken: string) {
-		const expiresIn = new Date()
-		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
-		res.cookie(this.ACCESS_TOKEN_NAME, accessToken, {
-			httpOnly: false,
 			domain: this.configService.get('FRONTEND_DOMAIN'),
 			expires: expiresIn,
 			secure: true,

@@ -1,6 +1,7 @@
 import { GstorageService } from '@core/gstorage/gstorage.service'
 import { PaginatedResult, PaginateFunction, paginator } from '@core/paginator'
 import { PrismaService } from '@core/prisma.service'
+import { hasPermission } from '@core/roles/permission.helper'
 import { RolesService } from '@core/roles/roles.service'
 import { Type } from '@core/uploads/dto/upload-image.dto'
 import { UploadsService } from '@core/uploads/uploads.service'
@@ -334,7 +335,7 @@ export class ProjectsService {
 	async checkUpdatePermissions(user: User, projectId: number) {
 		const project = await this.findOneById(+projectId)
 		const isOwner = await this.checkOwner(user, +projectId)
-		const hasAdminPermission = await this.rolesService.hasPermission(
+		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
 			'admin:projects.update'
 		)
@@ -354,7 +355,7 @@ export class ProjectsService {
 	async checkUpdatePermissionsiInternal(user: User, projectId: number) {
 		const project = await this.findOneById(+projectId)
 		const isOwner = await this.checkOwner(user, +projectId)
-		const hasAdminPermission = await this.rolesService.hasPermission(
+		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
 			'admin:projects.update'
 		)

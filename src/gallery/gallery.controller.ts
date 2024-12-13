@@ -3,6 +3,7 @@ import { CurrentUser } from '@core/auth/decorators/user.decorator'
 import { JwtAuthGuard } from '@core/auth/guards/auth.guard'
 import { PermissionsGuard } from '@core/auth/guards/permissions.guard'
 import { ProjectsService } from '@core/projects/projects.service'
+import { hasPermission } from '@core/roles/permission.helper'
 import { RolesService } from '@core/roles/roles.service'
 import { UploadsService } from '@core/uploads/uploads.service'
 import { User } from '@core/user/entity/user.entity'
@@ -42,7 +43,7 @@ export class GalleryController {
 		@UploadedFile() file: Express.Multer.File,
 		@Body() uploadGalleryImageDto: UploadImageDto
 	) {
-		const hasAdminPermission = await this.rolesService.hasPermission(
+		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
 			'admin:project.update.gallery'
 		)
@@ -75,7 +76,7 @@ export class GalleryController {
 		@CurrentUser() user: User
 	) {
 		const image = await this.galleryService.getById(+id)
-		const hasAdminPermission = await this.rolesService.hasPermission(
+		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
 			'admin:project.update.gallery'
 		)
@@ -102,7 +103,7 @@ export class GalleryController {
 		@Body() updateGalleryImageDto: UpdateImageDto
 	) {
 		const image = await this.galleryService.getById(+id)
-		const hasAdminPermission = await this.rolesService.hasPermission(
+		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
 			'admin:project.update.gallery'
 		)

@@ -35,13 +35,17 @@ export class AuthController {
 			? forwarded.split(',')[0].trim()
 			: req.socket.remoteAddress
 
-		await this.authService.auth(
+		const responce = await this.authService.auth(
 			res,
 			((req as any).user as any)?.id,
 			req.headers['user-agent'],
 			clientIp
 		)
-		return res.redirect(this.authService.FRONTEND_URL)
+		return res.redirect(
+			this.authService.FRONTEND_URL +
+				'/auth/social/discord?accessToken=' +
+				responce.accessToken
+		)
 	}
 
 	@Post('login')
@@ -65,11 +69,11 @@ export class AuthController {
 		}
 
 		const { refreshToken, ...response } = await this.authService.getNewTokens(
-			refreshTokenFromCookies
+			refreshTokenFromCookies,
+			res
 		)
 
 		this.authService.addRefreshTokenToResponse(res, refreshToken)
-		this.authService.addAccessTokenToResponse(res, response.accessToken)
 
 		return response
 	}
@@ -95,6 +99,5 @@ export class AuthController {
 				success: true
 			}
 		}
-		return { message: 'Logout success', success: true }
 	}
 }
