@@ -2,7 +2,7 @@ import { GstorageService } from '@core/gstorage/gstorage.service'
 import { PaginatedResult, PaginateFunction, paginator } from '@core/paginator'
 import { PrismaService } from '@core/prisma.service'
 import { UploadsService } from '@core/uploads/uploads.service'
-import { HttpException, Injectable } from '@nestjs/common'
+import { HttpException, Injectable, Logger } from '@nestjs/common'
 import { ProjectType } from '@prisma/client'
 import { CreateTagDto } from './dto/create-tag.dto'
 import { TagsFilterInput } from './dto/tags-filter.input'
@@ -109,7 +109,7 @@ export class TagsService {
 		try {
 			await this.gstorage.deleteFile(url)
 		} catch (error) {
-			console.error(error)
+			Logger.error(error)
 		}
 	}
 }

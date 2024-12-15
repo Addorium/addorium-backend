@@ -10,6 +10,8 @@ import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
 import { DiscordStrategy } from './discord.strategy'
 import { JwtStrategy } from './jwt.strategy'
+import { TokenService } from './token.service'
+import { SocialDiscordController } from './social/discord.controller'
 
 @Module({
 	imports: [
@@ -20,7 +22,7 @@ import { JwtStrategy } from './jwt.strategy'
 			useFactory: getJwtConfig
 		})
 	],
-	controllers: [AuthController],
+	controllers: [AuthController, SocialDiscordController],
 	providers: [
 		AuthService,
 		JwtStrategy,
@@ -28,7 +30,8 @@ import { JwtStrategy } from './jwt.strategy'
 		SessionsService,
 		PrismaService,
 		GstorageService,
-		ConfigService
+		ConfigService,
+		TokenService
 	]
 })
 export class AuthModule {}

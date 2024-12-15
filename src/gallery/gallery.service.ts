@@ -3,7 +3,6 @@ import { PrismaService } from '@core/prisma.service'
 import { Project } from '@core/projects/entities/projects.entity'
 import { ProjectsService } from '@core/projects/projects.service'
 import { UploadsService } from '@core/uploads/uploads.service'
-import { User } from '@core/user/entity/user.entity'
 import { HttpException, Injectable } from '@nestjs/common'
 import { UpdateImageDto } from './dto/update-image.input'
 import { UploadImageDto } from './dto/upload-image.input'
@@ -18,8 +17,7 @@ export class GalleryService {
 
 	async uploadImageToGallery(
 		file: Express.Multer.File,
-		uploadGalleryImageDto: UploadImageDto,
-		user: User
+		uploadGalleryImageDto: UploadImageDto
 	) {
 		const project = await this.projectsService.findOneById(
 			+uploadGalleryImageDto.projectId
@@ -27,10 +25,7 @@ export class GalleryService {
 		if (!project) {
 			throw new HttpException('Project not found', 404)
 		}
-		const { filename, url, uploadet_file } = await this.uploadImage(
-			file,
-			project
-		)
+		const { filename } = await this.uploadImage(file, project)
 		const galleryImage = await this.prisma.projectImage.create({
 			data: {
 				title: uploadGalleryImageDto.title,
@@ -53,12 +48,11 @@ export class GalleryService {
 			where: { id: +imageId }
 		})
 
-		const { filename, url } = UploadsService.getProjectGalleryImageName(
+		UploadsService.getProjectGalleryImageName(
 			deletedImage.projectId.toString(),
 			deletedImage.url
 		)
 
-		const deleted = await this.gstorage.deleteFile(url)
 		return deletedImage
 	}
 	async getById(id: number) {

@@ -26,12 +26,7 @@ export class PermissionsGuard implements CanActivate {
 		const userPermissions = role.permissions
 
 		for (const requiredPermission of requiredPermissions) {
-			const result = await
-			 hasPermission(
-				userPermissions,
-				requiredPermission
-			)
-			console.log('result3 - ', result)
+			const result = await hasPermission(userPermissions, requiredPermission)
 			if (result) {
 				return true
 			}

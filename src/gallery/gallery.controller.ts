@@ -55,8 +55,7 @@ export class GalleryController {
 		if (hasAdminPermission && !isProjectOwner) {
 			return await this.galleryService.uploadImageToGallery(
 				file,
-				uploadGalleryImageDto,
-				user
+				uploadGalleryImageDto
 			)
 		} else if (!isProjectOwner) {
 			throw new HttpException('Permission denied', 403)
@@ -64,8 +63,7 @@ export class GalleryController {
 
 		return await this.galleryService.uploadImageToGallery(
 			file,
-			uploadGalleryImageDto,
-			user
+			uploadGalleryImageDto
 		)
 	}
 	@Delete(':id')

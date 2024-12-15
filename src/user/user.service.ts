@@ -14,7 +14,6 @@ import { User } from './entity/user.entity'
 export class UserService {
 	constructor(
 		private prisma: PrismaService,
-		private jwtService: JwtService,
 		private gstorage: GstorageService
 	) {}
 	paginate: PaginateFunction = paginator({ perPage: 20 })

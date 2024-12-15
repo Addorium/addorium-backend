@@ -155,7 +155,7 @@ export class ProjectsService {
 	async simpleFindAll(
 		blueprintsFilter: ProjectsFilterAllInput
 	): Promise<PaginatedResult<Project>> {
-		const { page, search, orderBy, projectType, categories, tags, perPage } =
+		const { page, search, projectType, categories, tags, perPage } =
 			blueprintsFilter
 
 		const response = await this.paginate<Project, Prisma.ProjectFindManyArgs>(

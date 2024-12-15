@@ -33,12 +33,14 @@
 		"@nestjs/swagger": "^7.4.0",
 		"@prisma/client": "^5.20.0",
 		"@types/cookie-parser": "^1.4.6",
+		"@types/ua-parser-js": "^0.7.39",
 		"argon2": "^0.31.2",
 		"axios": "^1.6.7",
 		"class-transformer": "^0.5.1",
 		"class-validator": "^0.14.1",
 		"cookie-parser": "^1.4.6",
 		"date-fns": "^3.3.1",
+		"geoip-lite": "^1.4.10",
 		"nestjs-minio": "^2.6.2",
 		"passport": "^0.7.0",
 		"passport-discord": "^0.1.4",
@@ -47,6 +49,7 @@
 		"reflect-metadata": "^0.2.0",
 		"rxjs": "^7.8.1",
 		"sharp": "^0.33.5",
+		"ua-parser-js": "^2.0.0",
 		"uuid": "^10.0.0"
 	},
 	"devDependencies": {

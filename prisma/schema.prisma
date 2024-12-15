@@ -39,6 +39,7 @@ model UserSession {
   user         User      @relation(fields: [userId], references: [id])
   refreshToken String    @unique
   os           String?
+  osVersion    String?
   platform     String?
   city         String?
   country      String?

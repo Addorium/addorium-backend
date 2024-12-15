@@ -1,64 +1,64 @@
-import { SessionsService } from '@core/sessions/sessions.service'
 import { UploadsService } from '@core/uploads/uploads.service'
 import { User } from '@core/user/entity/user.entity'
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { JwtService } from '@nestjs/jwt'
 import { Response } from 'express'
 import { UserService } from '../user/user.service'
+import { TokenService } from './token.service'
+import { GeoEntity } from './entity/geo.entity'
 
 @Injectable()
 export class AuthService {
-	EXPIRE_DAY_REFRESH_TOKEN = 1
-	EXPIRE_MINUTE_ACCESS = 1
-	REFRESH_TOKEN_NAME = 'refreshToken'
-	ACCESS_TOKEN_NAME = 'accessToken'
+	public readonly FRONTEND_URL: string
 
 	constructor(
-		private jwt: JwtService,
-		private userService: UserService,
-		private configService: ConfigService,
-		private sessionsService: SessionsService
-	) {}
-	FRONTEND_URL = this.configService.get('FRONTEND_URL')
-	REDIRECT_URI = this.FRONTEND_URL + '/auth/discord'
-	//REDIRECT_URI = 'http://localhost:4200/api/v1/auth/discord'
+		private readonly userService: UserService,
+		private readonly configService: ConfigService,
+		private readonly tokenService: TokenService
+	) {
+		this.FRONTEND_URL = this.configService.get<string>('FRONTEND_URL')
+	}
 
 	public token = 'none'
+
 	async validateDiscordUser(profile: {
 		id: string
 		username: string
 		global_name: string
 		email: string
-	}) {
+	}): Promise<User> {
 		let user = await this.userService.getByDiscordId(profile.id)
 		if (!user) {
 			user = await this.discordRegister(profile)
-			return user
 		}
 		return user
 	}
-	async validateUser(id: string) {
+
+	async validateUser(id: string): Promise<User | null> {
 		const user = await this.userService.getById(id)
+		return user || null
+	}
+
+	async auth(response: Response, id: string, geo: GeoEntity) {
+		const user = await this.validateUser(id)
 		if (!user) {
-			return null
+			throw new UnauthorizedException('User not found')
 		}
-		return user
-	}
-	async auth(response: Response, id: string, userAgent: string, ip: string) {
-		const user: User = await this.validateUser(id)
-		const tokens = this.issueTokens(user)
-		this.storeRefreshTokenToDatabase(user.id, {
+		const tokens = this.tokenService.issueTokens(user)
+		await this.tokenService.storeRefreshTokenToDatabase(user.id, {
 			refreshToken: tokens.refreshToken,
-			userAgent: userAgent,
-			ip: ip
+			userAgent: geo.userAgent,
+			ip: geo.ip,
+			os: geo.os,
+			osVersion: geo.osVersion,
+			platform: geo.platform,
+			city: geo.city,
+			country: geo.country
 		})
-		this.addRefreshTokenToResponse(response, tokens.refreshToken)
-		return {
-			user,
-			...tokens
-		}
+		this.tokenService.addRefreshTokenToResponse(response, tokens.refreshToken)
+		return { user, ...tokens }
 	}
+
 	async discordRegister(discordUser: {
 		id: string
 		username: string
@@ -71,98 +71,9 @@ export class AuthService {
 			email: discordUser.email
 		})
 		const avatar = await UploadsService.downloadImageAsMulterFile(
-			'https://api.dicebear.com/9.x/identicon/webp?seed=' + user.name
+			`https://api.dicebear.com/9.x/identicon/webp?seed=${user.name}`
 		)
 		await this.userService.uploadAvatarImage(avatar, user)
 		return user
-	}
-	private storeRefreshTokenToDatabase(
-		userId: number,
-		input: { refreshToken: string; userAgent: string; ip: string }
-	) {
-		const session = this.sessionsService.putUserSession(+userId, input)
-		return session
-	}
-	private issueTokens(user: User) {
-		const accessData = {
-			id: +user.id,
-			email: user.email,
-			name: user.name,
-			role: user.role
-		}
-		const refreshData = {
-			id: +user.id
-		}
-
-		const accessToken = this.jwt.sign(accessData, {
-			expiresIn: '1m'
-		})
-
-		const refreshToken = this.jwt.sign(refreshData, {
-			expiresIn: '7d'
-		})
-
-		return { accessToken, refreshToken }
-	}
-	async getNewTokens(refreshToken: string, res: Response) {
-		const result = await this.jwt.verifyAsync(refreshToken)
-		if (!result) {
-			const badSession =
-				await this.sessionsService.getSessionByRefreshToken(refreshToken)
-			if (badSession) {
-				await this.sessionsService.revokeUserSession(
-					badSession.userId,
-					badSession.id
-				)
-			}
-			this.removeRefreshTokenFromResponse(res)
-			throw new UnauthorizedException('Invalid refresh token')
-		}
-		let session =
-			await this.sessionsService.getSessionByRefreshToken(refreshToken)
-		if (!session) {
-			this.removeRefreshTokenFromResponse(res)
-			throw new UnauthorizedException('Invalid refresh token')
-		}
-		if (session.revokedAt) {
-			this.removeRefreshTokenFromResponse(res)
-			throw new UnauthorizedException('Refresh token has been revoked')
-		}
-
-		const user = await this.userService.getById(result.id.toString())
-
-		const tokens = this.issueTokens(user)
-		session = await this.sessionsService.updateRefreshToken(
-			session.id,
-			tokens.refreshToken
-		)
-
-		return {
-			user,
-			...tokens
-		}
-	}
-	addRefreshTokenToResponse(res: Response, refreshToken: string) {
-		const expiresIn = new Date()
-		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
-		res.cookie(this.REFRESH_TOKEN_NAME, refreshToken, {
-			httpOnly: true,
-			domain: this.configService.get('FRONTEND_DOMAIN'),
-			expires: expiresIn,
-			secure: true,
-			// lax if production
-			sameSite: 'none'
-		})
-	}
-
-	removeRefreshTokenFromResponse(res: Response) {
-		res.cookie(this.REFRESH_TOKEN_NAME, '', {
-			httpOnly: true,
-			domain: this.configService.get('FRONTEND_DOMAIN'),
-			expires: new Date(0),
-			secure: true,
-			// lax if production
-			sameSite: 'none'
-		})
 	}
 }
