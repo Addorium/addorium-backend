@@ -33,6 +33,7 @@
 		"@nestjs/swagger": "^7.4.0",
 		"@prisma/client": "^5.20.0",
 		"@types/cookie-parser": "^1.4.6",
+		"@types/geoip-lite": "^1.4.4",
 		"@types/ua-parser-js": "^0.7.39",
 		"argon2": "^0.31.2",
 		"axios": "^1.6.7",

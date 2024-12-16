@@ -1,13 +1,25 @@
-import { Controller, Get, HttpCode, Req, Res, UseGuards } from '@nestjs/common'
+import {
+	Controller,
+	Get,
+	HttpCode,
+	Logger,
+	Req,
+	Res,
+	UseGuards
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { AuthGuard } from '@nestjs/passport'
+import axios from 'axios'
 import { Request, Response } from 'express'
-import geoip from 'geoip-lite'
 import { UAParser } from 'ua-parser-js'
 import { AuthService } from '../auth.service'
 
-@Controller('discord')
+@Controller('auth/discord')
 export class SocialDiscordController {
-	constructor(private readonly authService: AuthService) {}
+	constructor(
+		private readonly authService: AuthService,
+		private readonly configService: ConfigService
+	) {}
 
 	@Get('/')
 	@HttpCode(200)
@@ -30,14 +42,18 @@ export class SocialDiscordController {
 				: req.socket.remoteAddress
 		}
 
-		const geo = geoip.lookup(clientIp)
-		const loginLocation = geo ? geo.country : 'Unknown'
+		const geo = await getGeoLocation(clientIp, this.configService)
+		const loginLocation = geo ? geo.country_name : 'Unknown'
 
 		const parser = new UAParser(req.headers['user-agent'])
 		const os = parser.getOS().name
 		const osVersion = parser.getOS().version
-		const platform = parser.getResult().ua
-		const city = geo ? geo.city : 'Unknown'
+		const platform = parser.getResult().browser.name
+		const city = geo ? geo.city_name : 'Unknown'
+
+		Logger.log(
+			`User ${((req as any).user as any)?.id} logged in from ${loginLocation} ${city} ${os} ${osVersion} ${platform}`
+		)
 
 		const response = await this.authService.auth(
 			res,
@@ -57,5 +73,30 @@ export class SocialDiscordController {
 				'/auth/social/discord?accessToken=' +
 				response.accessToken
 		)
+	}
+}
+async function getGeoLocation(
+	clientIp: string,
+	configService: ConfigService
+): Promise<{ country_name: string; city_name: string; region_name: string }> {
+	const apiKey = configService.get('IP2LOCATION_API_KEY')
+	try {
+		const geoResponse = await axios.get(
+			`https://api.ip2location.io/?key=${apiKey}&ip=${clientIp}`
+		)
+		Logger.log(geoResponse.data)
+		const geoData = geoResponse.data
+		return {
+			country_name: geoData.country_name || 'Unknown',
+			city_name: geoData.city_name || 'Unknown',
+			region_name: geoData.region_name || 'Unknown'
+		}
+	} catch (error) {
+		Logger.error('Error fetching geo location:', error)
+		return {
+			country_name: 'Unknown',
+			city_name: 'Unknown',
+			region_name: 'Unknown'
+		}
 	}
 }

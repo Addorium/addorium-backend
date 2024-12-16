@@ -13,6 +13,7 @@ export class SessionsService {
 			userAgent: string
 			ip: string
 			os?: string
+			osVersion?: string
 			platform?: string
 			city?: string
 			country?: string
@@ -30,6 +31,7 @@ export class SessionsService {
 				userAgent: input.userAgent,
 				ip: input.ip,
 				os: input.os,
+				osVersion: input.osVersion,
 				platform: input.platform,
 				city: input.city,
 				country: input.country
@@ -112,6 +114,7 @@ export class SessionsService {
 				userAgent: true,
 				ip: true,
 				os: true,
+				osVersion: true,
 				platform: true,
 				city: true,
 				country: true,
@@ -143,6 +146,7 @@ export class SessionsService {
 				userAgent: true,
 				ip: true,
 				os: true,
+				osVersion: true,
 				platform: true,
 				city: true,
 				country: true,
