@@ -34,6 +34,6 @@ COPY --from=builder /app/service_account.json ./
 EXPOSE 4200
 
 # Запуск приложения
-CMD ["pnpm", "prisma", "migrate", "deploy", "&&", "pnpm", "start:prod"]
+CMD ["pnpm", "start:prod"]
 
 
