@@ -2,12 +2,13 @@ import { SessionsService } from '@core/sessions/sessions.service'
 import {
 	Controller,
 	HttpCode,
+	Logger,
 	Post,
 	Req,
 	Res,
 	UnauthorizedException
 } from '@nestjs/common'
-import { ApiCookieAuth, ApiTags } from '@nestjs/swagger'
+import { ApiTags } from '@nestjs/swagger'
 import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
 import { TokenService } from './token.service'
@@ -28,7 +29,6 @@ export class AuthController {
 
 	@HttpCode(200)
 	@Post('access-token')
-	@ApiCookieAuth()
 	async getNewTokens(
 		@Req() req: Request,
 		@Res({ passthrough: true }) res: Response
@@ -46,7 +46,7 @@ export class AuthController {
 			res
 		)
 
-		this.tokenService.addRefreshTokenToResponse(res, refreshToken)
+		// this.tokenService.addRefreshTokenToResponse(res, refreshToken)
 
 		return response
 	}
@@ -56,7 +56,7 @@ export class AuthController {
 	async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
 		const refreshTokenFromCookies =
 			this.tokenService.getRefreshTokenFromCookies(req)
-
+		Logger.log('Logout request from token - ', refreshTokenFromCookies)
 		if (refreshTokenFromCookies) {
 			this.tokenService.removeRefreshTokenFromResponse(res)
 			const session = await this.sessionService.getSessionByRefreshToken(

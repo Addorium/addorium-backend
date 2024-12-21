@@ -59,19 +59,21 @@ export class TokenService {
 
 			if (!session || session.revokedAt) {
 				this.removeRefreshTokenFromResponse(res)
+				console.log('revoked')
 				throw new UnauthorizedException('Invalid or revoked refresh token')
 			}
 
 			const user = await this.userService.getById(result.id.toString())
 			const tokens = this.issueTokens(user)
-			await this.sessionsService.updateRefreshToken(
-				session.id,
-				tokens.refreshToken
-			)
+			// await this.sessionsService.updateRefreshToken(
+			// 	session.id,
+			// 	tokens.refreshToken
+			// )
 
 			return { user, ...tokens }
 		} catch (error) {
 			this.removeRefreshTokenFromResponse(res)
+			console.log('invalid')
 			throw new UnauthorizedException('Invalid refresh token')
 		}
 	}

@@ -84,7 +84,6 @@ async function getGeoLocation(
 		const geoResponse = await axios.get(
 			`https://api.ip2location.io/?key=${apiKey}&ip=${clientIp}`
 		)
-		Logger.log(geoResponse.data)
 		const geoData = geoResponse.data
 		return {
 			country_name: geoData.country_name || 'Unknown',
