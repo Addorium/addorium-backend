@@ -46,7 +46,7 @@ export class AuthController {
 			res
 		)
 
-		// this.tokenService.addRefreshTokenToResponse(res, refreshToken)
+		this.tokenService.addRefreshTokenToResponse(res, refreshToken)
 
 		return response
 	}

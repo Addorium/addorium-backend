@@ -59,7 +59,6 @@ export class TokenService {
 
 			if (!session || session.revokedAt) {
 				this.removeRefreshTokenFromResponse(res)
-				console.log('revoked')
 				throw new UnauthorizedException('Invalid or revoked refresh token')
 			}
 
@@ -70,7 +69,11 @@ export class TokenService {
 			// 	tokens.refreshToken
 			// )
 
-			return { user, ...tokens }
+			return {
+				user,
+				accessToken: tokens.accessToken,
+				refreshToken: refreshToken
+			}
 		} catch (error) {
 			this.removeRefreshTokenFromResponse(res)
 			console.log('invalid')
