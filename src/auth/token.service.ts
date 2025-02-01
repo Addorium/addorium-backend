@@ -45,7 +45,7 @@ export class TokenService {
 		}
 		const refreshData = { id: user.id }
 
-		const accessToken = this.jwt.sign(accessData, { expiresIn: '1m' })
+		const accessToken = this.jwt.sign(accessData, { expiresIn: '10m' })
 		const refreshToken = this.jwt.sign(refreshData, { expiresIn: '7d' })
 
 		return { accessToken, refreshToken }
