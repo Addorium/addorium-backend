@@ -30,7 +30,7 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/permissions.txt ./
+# COPY --from=builder /app/permissions.txt ./
 
 # Установка переменных окружения (если нужно)
 # ENV NODE_ENV=production
