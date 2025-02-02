@@ -13,7 +13,7 @@ COPY . .
 
 RUN pnpm prisma generate
 
-RUN pnpm scan-perms
+# RUN pnpm scan-perms
 
 RUN pnpm build
 
