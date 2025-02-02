@@ -34,7 +34,7 @@ export class GalleryController {
 
 	@Post()
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.update.gallery')
+	@Permission('user:project.update.gallery')
 	@UseInterceptors(
 		FileInterceptor('file', UploadsService.imagesInterceptorOptions)
 	)
@@ -68,7 +68,7 @@ export class GalleryController {
 	}
 	@Delete(':id')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.update.gallery')
+	@Permission('user:project.update.gallery')
 	async removeImageFromGallery(
 		@Param('id') id: string,
 		@CurrentUser() user: User
@@ -94,7 +94,7 @@ export class GalleryController {
 
 	@Put(':id')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.update.gallery')
+	@Permission('user:project.update.gallery')
 	async updateImageInGallery(
 		@Param('id') id: string,
 		@CurrentUser() user: User,

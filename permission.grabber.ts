@@ -9,7 +9,6 @@ const permissionRegex =
 	/\b(?:users|admin|app):[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*\b/g
 const permissionsSet = new Set<string>()
 
-// Функция для рекурсивного обхода файлов
 const scanDirectory = (dir: string) => {
 	const files = fs.readdirSync(dir)
 
@@ -18,7 +17,7 @@ const scanDirectory = (dir: string) => {
 		const stat = fs.statSync(fullPath)
 
 		if (stat.isDirectory()) {
-			scanDirectory(fullPath) // Рекурсивный вызов для подпапок
+			scanDirectory(fullPath)
 		} else if (stat.isFile() && file.endsWith('.ts')) {
 			const content = fs.readFileSync(fullPath, 'utf-8')
 			const matches = content.match(permissionRegex)

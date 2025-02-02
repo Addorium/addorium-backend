@@ -45,7 +45,7 @@ export class ProjectsController {
 
 	@Post()
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.create')
+	@Permission('user:project.create')
 	@ApiBearerAuth()
 	async createBlueprint(
 		@CurrentUser() user: User,
@@ -67,7 +67,7 @@ export class ProjectsController {
 
 	@Get('user/my')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.read.own')
+	@Permission('user:project.read.own')
 	async findAllUserProjects(
 		@CurrentUser() user: User,
 		@Query() blueprintsFilter: ProjectsFilterInput
@@ -102,15 +102,20 @@ export class ProjectsController {
 
 	@Put(':id')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.update')
+	@Permission('user:project.update')
 	@ApiBearerAuth()
 	async updateProject(
 		@CurrentUser() user: User,
 		@Body() updateBlueprintInput: UpdateProjectInput
 	) {
+		// PERMISSION: admin:project.settings.edit - to edit project settings for admins
+		// PERMISSION: admin:project.settings.icon - to changing project icon for admins
+		// PERMISSION: admin:project.settings.file - to changing project file for admins
+
 		await this.projectsService.checkUpdatePermissions(
 			user,
-			updateBlueprintInput.id
+			updateBlueprintInput.id,
+			'update'
 		)
 
 		return await this.projectsService.update(updateBlueprintInput)
@@ -118,16 +123,17 @@ export class ProjectsController {
 
 	@Delete(':id')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.delete')
+	@Permission('user:project.delete')
 	@ApiBearerAuth()
 	async removeProject(@CurrentUser() user: User, @Param('id') id: number) {
-		await this.projectsService.checkUpdatePermissions(user, +id)
+		// PERMISSION: admin:project.settings.delete - to delete project for admins
+		await this.projectsService.checkUpdatePermissions(user, +id, 'delete')
 		return await this.projectsService.remove(user, +id)
 	}
 
 	@Patch('update/icon')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.update.icon')
+	@Permission('user:project.update.icon')
 	@UseInterceptors(
 		FileInterceptor('file', UploadsService.imagesInterceptorOptions)
 	)
@@ -141,7 +147,8 @@ export class ProjectsController {
 		}
 		await this.projectsService.checkUpdatePermissions(
 			user,
-			updateUaerAvatarDto.id
+			updateUaerAvatarDto.id,
+			'update.icon'
 		)
 		const project = await this.projectsService.findOneById(
 			+updateUaerAvatarDto.id
@@ -155,17 +162,17 @@ export class ProjectsController {
 	}
 	@Delete('update/icon/:id')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.update.icon')
+	@Permission('user:project.delete.icon')
 	@ApiBearerAuth()
 	async projectIconClear(@CurrentUser() user: User, @Param('id') id: number) {
 		const project = await this.projectsService.findOneById(+id)
-		await this.projectsService.checkUpdatePermissions(user, +id)
+		await this.projectsService.checkUpdatePermissions(user, +id, 'delete.icon')
 		return await this.projectsService.clearIcon(project, 'icon')
 	}
 
 	@Patch('update/file/:id')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:project.update.file')
+	@Permission('user:project.update.file')
 	@UseInterceptors(
 		FileInterceptor('file', UploadsService.blueprintsInterceptorOptions)
 	)
@@ -190,7 +197,11 @@ export class ProjectsController {
 		@Query('id') project_id: string
 	) {
 		const project = await this.projectsService.findOneById(+project_id)
-		await this.projectsService.checkUpdatePermissions(user, +project_id)
+		await this.projectsService.checkUpdatePermissions(
+			user,
+			+project_id,
+			'update.file'
+		)
 		return await this.projectsService.uploadProjectImage(
 			file,
 			project,

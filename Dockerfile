@@ -13,6 +13,8 @@ COPY . .
 
 RUN pnpm prisma generate
 
+RUN pnpm scan-perms
+
 RUN pnpm build
 
 # Stage 2: Production
@@ -22,11 +24,13 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
+
+
 # Копирование собранного приложения и установленных зависимостей
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/service_account.json ./
+COPY --from=builder /app/permissions.txt ./
 
 # Установка переменных окружения (если нужно)
 # ENV NODE_ENV=production

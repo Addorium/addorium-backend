@@ -99,7 +99,7 @@ export class UserController {
 	// update user by id
 	@Put()
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:user.update')
+	@Permission('user:user.update')
 	@ApiBearerAuth()
 	@ApiOkResponse({ type: ClearUser })
 	async updateUser(
@@ -143,7 +143,7 @@ export class UserController {
 		FileInterceptor('file', UploadsService.imagesInterceptorOptions)
 	)
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:user.update.avatar')
+	@Permission('user:user.update.avatar')
 	@ApiBearerAuth()
 	@ApiConsumes('multipart/form-data')
 	@ApiBody({
@@ -188,7 +188,7 @@ export class UserController {
 	}
 	@Delete('avatar/:id')
 	@UseGuards(JwtAuthGuard, PermissionsGuard)
-	@Permission('users:user.update.avatar')
+	@Permission('user:user.update.avatar')
 	@ApiBearerAuth()
 	@ApiOkResponse({ type: ClearUser })
 	async userAvatarClear(@CurrentUser() user: User, @Param('id') id: number) {

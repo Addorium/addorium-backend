@@ -332,12 +332,12 @@ export class ProjectsService {
 		}
 		return true
 	}
-	async checkUpdatePermissions(user: User, projectId: number) {
+	async checkUpdatePermissions(user: User, projectId: number, action: string) {
 		const project = await this.findOneById(+projectId)
 		const isOwner = await this.checkOwner(user, +projectId)
 		const hasAdminPermission = await hasPermission(
 			user.role.permissions,
-			'admin:projects.update'
+			'admin:project.' + action
 		)
 		if (project.status === 'MODERATION' && !hasAdminPermission) {
 			throw new HttpException(
@@ -351,20 +351,5 @@ export class ProjectsService {
 				403
 			)
 		}
-	}
-	async checkUpdatePermissionsiInternal(user: User, projectId: number) {
-		const project = await this.findOneById(+projectId)
-		const isOwner = await this.checkOwner(user, +projectId)
-		const hasAdminPermission = await hasPermission(
-			user.role.permissions,
-			'admin:projects.update'
-		)
-		if (project.status === 'MODERATION' && !hasAdminPermission) {
-			return false
-		}
-		if (!isOwner && !hasAdminPermission) {
-			return false
-		}
-		return true
 	}
 }

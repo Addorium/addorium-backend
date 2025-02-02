@@ -9,7 +9,7 @@ export class CreateRoleInput {
 	@IsNotEmpty({ each: true, message: 'Role permissions are required' })
 	@ApiProperty({
 		description: 'Role permissions',
-		example: ['users:user.update', 'users:user.create']
+		example: ['user:user.update', 'user:user.create']
 	})
 	permissions: string[]
 }

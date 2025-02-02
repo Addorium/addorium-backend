@@ -54,8 +54,8 @@ describe('PermissionsGuard', () => {
 	}
 
 	it('должно возвращать true, если у пользователя есть требуемое разрешение', async () => {
-		const requiredPermissions = ['users:blueprint.update.icon']
-		const userPermissions = ['users:blueprint.update.icon']
+		const requiredPermissions = ['user:blueprint.update.icon']
+		const userPermissions = ['user:blueprint.update.icon']
 
 		jest
 			.spyOn(reflector, 'getAllAndOverride')
@@ -76,8 +76,8 @@ describe('PermissionsGuard', () => {
 	})
 
 	it('должно возвращать true, если у пользователя есть разрешение с подстановочным знаком, которое покрывает требуемое разрешение', async () => {
-		const requiredPermissions = ['users:blueprint.update.icon']
-		const userPermissions = ['users:blueprint.update.*']
+		const requiredPermissions = ['user:blueprint.update.icon']
+		const userPermissions = ['user:blueprint.update.*']
 
 		jest
 			.spyOn(reflector, 'getAllAndOverride')
@@ -98,8 +98,8 @@ describe('PermissionsGuard', () => {
 	})
 
 	it('должно возвращать true, если у пользователя есть разрешение более высокого уровня.', async () => {
-		const requiredPermissions = ['users:blueprint.update.icon']
-		const userPermissions = ['users:blueprint.*']
+		const requiredPermissions = ['user:blueprint.update.icon']
+		const userPermissions = ['user:blueprint.*']
 
 		jest
 			.spyOn(reflector, 'getAllAndOverride')
@@ -120,8 +120,8 @@ describe('PermissionsGuard', () => {
 	})
 
 	it('должно возвращать false, если у пользователя нет требуемого разрешения', async () => {
-		const requiredPermissions = ['users:blueprint.update.icon']
-		const userPermissions = ['users:blueprint.view.icon']
+		const requiredPermissions = ['user:blueprint.update.icon']
+		const userPermissions = ['user:blueprint.view.icon']
 
 		jest
 			.spyOn(reflector, 'getAllAndOverride')
@@ -142,8 +142,8 @@ describe('PermissionsGuard', () => {
 	})
 
 	it('должно возвращать false, если пользователь имеет противоречивое разрешение', async () => {
-		const requiredPermissions = ['users:blueprint.update.icon']
-		const userPermissions = ['users:blueprint.update.banner']
+		const requiredPermissions = ['user:blueprint.update.icon']
+		const userPermissions = ['user:blueprint.update.banner']
 
 		jest
 			.spyOn(reflector, 'getAllAndOverride')
@@ -229,7 +229,7 @@ describe('PermissionsGuard', () => {
 		expect(result).toBe(false)
 	})
 	it('должно возвращать true, если у администратора есть доступ', async () => {
-		const requiredPermissions = ['users:blueprint.update.icon']
+		const requiredPermissions = ['user:blueprint.update.icon']
 		const userPermissions = ['admin:blueprint.update.*']
 
 		jest
@@ -251,7 +251,7 @@ describe('PermissionsGuard', () => {
 	})
 	it('должно вернуть false так как у users нету доступа к admin', async () => {
 		const requiredPermissions = ['admin:blueprint.update.icon']
-		const userPermissions = ['users:blueprint.update.*']
+		const userPermissions = ['user:blueprint.update.*']
 
 		jest
 			.spyOn(reflector, 'getAllAndOverride')

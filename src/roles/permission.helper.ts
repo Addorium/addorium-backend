@@ -27,7 +27,7 @@ function matchPermissionParts(
 	const userModificator = userPermissionParts[0].split(':')[0]
 	userPermissionParts[0] = userPermissionParts[0].split(':')[1]
 
-	if (userModificator === 'users' && permissionModificator === 'admin') {
+	if (userModificator === 'user' && permissionModificator === 'admin') {
 		return false
 	}
 
